@@ -1,7 +1,6 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import axios from 'axios';
 import { 
-  DollarSign, ShoppingBag, Package, Users,
   RefreshCw
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';

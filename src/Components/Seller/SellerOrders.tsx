@@ -1,8 +1,8 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import axios from 'axios';
-import { 
-  Package, Truck, CheckCircle, XCircle, Clock, 
-  Search, Download, Eye, 
+import {
+  Package, Truck, CheckCircle, XCircle, Clock,
+  Search, Download, Eye,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -57,6 +57,7 @@ interface Order {
   items: OrderItem[];
   total: number;
   status: string;
+  sellerStatus?: string;
   orderDate: string;
   createdAt: string;
   paymentMethod: string;
@@ -81,7 +82,7 @@ const SellerOrders: React.FC = () => {
   });
 
   useEffect(() => {
-    if (token === null || token === undefined || token === '') {
+    if (!token) {
       return;
     }
     fetchOrders();
@@ -97,7 +98,7 @@ const SellerOrders: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('/seller/orders', {
-        params: { 
+        params: {
           status: statusFilter === 'all' ? undefined : statusFilter,
           search: searchQuery || undefined
         },
@@ -118,9 +119,9 @@ const SellerOrders: React.FC = () => {
   };
 
   const updateItemStatus = async (
-    orderId: string, 
-    itemId: string | null, 
-    status: string, 
+    orderId: string,
+    itemId: string | null,
+    status: string,
     trackingNumber: string = ''
   ): Promise<void> => {
     if (!token) return;
@@ -134,11 +135,11 @@ const SellerOrders: React.FC = () => {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       toast.success('Status updated successfully');
       fetchOrders();
       if (selectedOrder && selectedOrder.orderId === orderId) {
-        setSelectedOrder(prev => prev ? {...prev, status} : null);
+        setSelectedOrder(prev => prev ? { ...prev, status, sellerStatus: status } : null);
       }
     } catch (error: any) {
       console.error('Error updating status:', error);
@@ -225,7 +226,7 @@ const SellerOrders: React.FC = () => {
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
             />
           </div>
-          
+
           <select
             value={statusFilter}
             onChange={handleStatusFilterChange}
@@ -239,7 +240,7 @@ const SellerOrders: React.FC = () => {
             <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
           </select>
-          
+
           <button
             onClick={handleExportOrders}
             className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -309,7 +310,7 @@ const SellerOrders: React.FC = () => {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        
+
                         {(order.sellerStatus || order.status) === 'pending' && (
                           <>
                             <button
@@ -330,7 +331,7 @@ const SellerOrders: React.FC = () => {
                             </button>
                           </>
                         )}
-                        
+
                         {(order.sellerStatus || order.status) === 'accepted' && (
                           <button
                             onClick={() => updateItemStatus(order.orderId, null, 'processing')}
@@ -341,7 +342,7 @@ const SellerOrders: React.FC = () => {
                             <Clock className="h-4 w-4" />
                           </button>
                         )}
-                        
+
                         {(order.sellerStatus || order.status) === 'processing' && (
                           <button
                             onClick={() => handleMarkAsShipped(order.orderId)}
@@ -363,7 +364,7 @@ const SellerOrders: React.FC = () => {
       </div>
 
       {selectedOrder && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
           onClick={(e) => {
             if (e.target === e.currentTarget) setSelectedOrder(null);
