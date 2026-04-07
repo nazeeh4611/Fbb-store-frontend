@@ -5,7 +5,6 @@ import { X, ArrowRight, Mail, Lock, User, Phone } from 'lucide-react';
 import { baseurl } from "../../Constant/Base";
 
 const API_BASE_URL = baseurl;
-// const GOOGLE_CLIENT_ID = ClientId;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -52,6 +51,12 @@ interface AuthModalProps {
   onForgotPassword?: () => void;
 }
 
+interface GoogleCredentialResponse {
+  credential?: string;
+  clientId?: string;
+  select_by?: string;
+}
+
 const AuthModal: React.FC<AuthModalProps> = ({
   show,
   onClose,
@@ -75,7 +80,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
     const initDeviceId = () => {
       let deviceId = localStorage.getItem('deviceId');
       if (!deviceId) {
-        deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
         localStorage.setItem('deviceId', deviceId);
       }
     };
@@ -220,9 +225,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: GoogleCredentialResponse) => {
     setError("");
     setSuccess("");
+    
+    if (!credentialResponse.credential) {
+      setError("Google authentication failed: No credential received");
+      return;
+    }
     
     try {
       const response = await api.post('/google-auth', { 
@@ -243,17 +253,21 @@ const AuthModal: React.FC<AuthModalProps> = ({
           resetForm();
           onClose();
         }, 1000);
+      } else {
+        setError(response.data.message || "Google authentication failed");
       }
     } catch (error: any) {
+      console.error("Google auth error:", error);
       const errorMessage = error.response?.data?.message || 
                           error.response?.data?.error || 
-                          "Google authentication failed";
+                          "Google authentication failed. Please try again.";
       setError(errorMessage);
     }
   };
 
   const handleGoogleError = () => {
-    setError("Google authentication failed. Please try again.");
+    console.error("Google login error occurred");
+    setError("Google authentication failed. Please make sure Google Sign-In is properly configured.");
   };
 
   const handleModalClose = () => {
@@ -379,14 +393,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 
                 <div className="space-y-3">
-                  <div className="bg-white rounded-xl p-1">
+                  <div className="flex justify-center rounded-xl overflow-hidden" style={{ background: 'white' }}>
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
                       onError={handleGoogleError}
-                      theme="filled_black"
-                      size="large"
-                      width="100%"
-                      text="signin_with"
+                      useOneTap={false}
+                      auto_select={false}
                     />
                   </div>
                 </div>
@@ -491,14 +503,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 
                 <div className="space-y-3">
-                  <div className="bg-white rounded-xl p-1">
+                  <div className="flex justify-center rounded-xl overflow-hidden" style={{ background: 'white' }}>
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
                       onError={handleGoogleError}
-                      theme="filled_black"
-                      size="large"
-                      width="100%"
-                      text="signup_with"
+                      useOneTap={false}
+                      auto_select={false}
                     />
                   </div>
                   

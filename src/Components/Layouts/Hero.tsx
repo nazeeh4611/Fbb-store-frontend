@@ -11,7 +11,7 @@ import slider12 from "../Layouts/Img/slider1 2.jpeg";
 import TrendingCarousel from "./Carousel";
 import axios from "axios";
 import { baseurl } from "../../Constant/Base";
-import {  useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock, Shield, Truck, Award, Sparkles, Zap, Heart, Quote, Grid, Package } from "lucide-react";
 
 const Hero = ({ onShopNowClick = () => {} }) => {
@@ -471,70 +471,101 @@ const Hero = ({ onShopNowClick = () => {} }) => {
         </div>
       )}
 
-      {/* Shop by Category Section */}
-      <div className="py-8 md:py-12 bg-gradient-to-b from-gray-50 to-white">
+      {/* Shop by Category Section - UPDATED WITH LARGER CARDS */}
+      <div className="py-12 md:py-16 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-8">
             <div>
               <div className="flex items-center gap-2">
-                <Grid className="w-5 h-5 md:w-6 md:h-6 text-gold-400" />
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900">Shop by Category</h2>
+                <Grid className="w-6 h-6 md:w-7 md:h-7 text-gold-400" />
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Shop by Category</h2>
               </div>
-              <div className="w-12 h-0.5 bg-gold-400 mt-1" />
+              <div className="w-16 h-0.5 bg-gold-400 mt-2" />
             </div>
             {categories.length > 0 && (
               <button
                 onClick={handleShopNow}
-                className="text-xs md:text-sm text-gold-400 font-medium hover:underline flex items-center gap-1"
+                className="text-sm md:text-base text-gold-400 font-medium hover:underline flex items-center gap-1"
               >
-                View All <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+                View All <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
               </button>
             )}
           </div>
 
           {loadingCategories ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
               {[...Array(4)].map((_, index) => (
-                <div key={index} className="bg-white rounded-lg overflow-hidden h-32 md:h-40 animate-pulse shadow-sm">
+                <div key={index} className="bg-white rounded-xl overflow-hidden h-64 md:h-80 animate-pulse shadow-md">
                   <div className="h-full w-full bg-gray-200" />
                 </div>
               ))}
             </div>
           ) : categories.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
               {displayCategories.map((category, index) => (
                 <motion.div
                   key={category._id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                  transition={{ duration: 0.4, delay: index * 0.1 }}
+                  className="group cursor-pointer"
                   onClick={() => handleCategoryClick(category._id)}
                 >
-                  <div className="relative h-32 md:h-40">
-                    <img
-                      src={category.image || "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&h=300&fit=crop"}
-                      alt={category.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                      onError={(e) => {
-                        const img = e.currentTarget as HTMLImageElement;
-                        img.src = "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=400&h=300&fit=crop";
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-all" />
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <h3 className="text-white font-semibold text-sm md:text-base truncate">{category.name}</h3>
-                      <p className="text-gray-200 text-xs group-hover:text-gold-400 transition-colors">Shop Now →</p>
+                  <div className="relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    {/* Image Container - Larger and taller */}
+                    <div className="relative h-64 md:h-80 lg:h-96 overflow-hidden">
+                      <img
+                        src={category.image || "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=600&h=500&fit=crop"}
+                        alt={category.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
+                        onError={(e) => {
+                          const img = e.currentTarget as HTMLImageElement;
+                          img.src = "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=600&h=500&fit=crop";
+                        }}
+                      />
+                      
+                      {/* Overlay gradient - Darker for better text visibility */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-70 group-hover:opacity-80 transition-opacity duration-300" />
+                      
+                      {/* Category Name Badge - Top left */}
+                      <div className="absolute top-4 left-4">
+                        <div className="bg-gold-400/90 backdrop-blur-sm px-3 py-1 rounded-full">
+                          <span className="text-black text-xs font-semibold uppercase tracking-wide">
+                            {category.name}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Content at bottom */}
+                      <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6 text-white transform translate-y-0 transition-transform duration-300 group-hover:translate-y-[-4px]">
+                        <h3 className="text-xl md:text-2xl font-bold mb-2">{category.name}</h3>
+                        <p className="text-gray-200 text-sm md:text-base mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          Explore Collection
+                        </p>
+                        <div className="flex items-center text-gold-400 font-medium text-sm md:text-base opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <span>Shop Now</span>
+                          <ArrowRight className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Simple card footer for mobile (visible on small screens when not hovering) */}
+                    <div className="lg:hidden p-4 bg-white border-t border-gray-100">
+                      <h3 className="text-gray-900 font-semibold text-base">{category.name}</h3>
+                      <div className="flex items-center text-gold-400 text-sm mt-1">
+                        <span>Shop Now</span>
+                        <ArrowRight className="w-3 h-3 ml-1" />
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500 text-sm">No categories available</p>
+            <div className="text-center py-12">
+              <Package className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">No categories available</p>
             </div>
           )}
         </div>

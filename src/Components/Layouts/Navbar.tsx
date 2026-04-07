@@ -318,7 +318,12 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
 
   const handleLogout = async () => {
     try {
-      await api.post('/user/logout');
+      const token = localStorage.getItem('token');
+      if (token) {
+        await axios.post(`${baseurl}/logout`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
       localStorage.removeItem('token');
       localStorage.removeItem('userData');
       setIsLogged(false);
