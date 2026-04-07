@@ -73,8 +73,8 @@ const ProductSkeleton: React.FC = () => (
 export default function ShopLayout(): JSX.Element {
   const navigate = useNavigate()
   const params = useParams<{ subcategoryId?: string; categoryId?: string }>()
-  const searchTimeoutRef = useRef<NodeJS.Timeout>()
-  const hasFetchedRef = useRef(false)
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const hasFetchedRef = useRef(false)
 
   const api = useMemo(() => axios.create({ baseURL: baseurl }), [])
 
