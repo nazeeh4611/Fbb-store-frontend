@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { PlusCircle, X, Upload, Edit2, Search, ChevronLeft, ChevronRight, Trash2, Menu, LogOut, Film, Image, Package, Tag, Scale, Ruler, Palette, Diamond, Shield, Hash, BarChart3, ShoppingBag, TrendingUp, DollarSign, Phone } from 'lucide-react';
+import { PlusCircle, X, Upload, Edit2, Search, ChevronLeft, ChevronRight, Trash2, Menu, LogOut, Film, Image, Package, Tag, Scale, Ruler, Palette, Diamond, Shield, Hash, BarChart3, ShoppingBag, TrendingUp, Phone } from 'lucide-react';
 import { baseurl } from '../../Constant/Base';
 import axios from "axios";
 import ExtractToken from '../../Token/Extract';

@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import axios from "axios";
 import { GoogleLogin } from '@react-oauth/google';
 import { X, ArrowRight, Mail, Lock, User, Phone } from 'lucide-react';
-import { ClientId, baseurl } from "../../Constant/Base";
+import { baseurl } from "../../Constant/Base";
 
 const API_BASE_URL = baseurl;
-const GOOGLE_CLIENT_ID = ClientId;
+// const GOOGLE_CLIENT_ID = ClientId;
 
 const api = axios.create({
   baseURL: API_BASE_URL,

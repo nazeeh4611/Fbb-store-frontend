@@ -1,4 +1,4 @@
-import { Heart, Filter, Search, ArrowRight, Star, Grid, List, X, Award, Truck, Shield, Package, ChevronDown, ChevronUp, Eye, Menu, SlidersHorizontal } from "lucide-react"
+import { Heart, Search, ArrowRight, Star, Grid, List, X, Award, Truck, Shield, Package, ChevronDown, ChevronUp, Eye, Menu, SlidersHorizontal } from "lucide-react"
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Footer from "../Layouts/Footer"
@@ -97,7 +97,6 @@ export default function ShopLayout(): JSX.Element {
   const [totalProducts, setTotalProducts] = useState<number>(0)
   const [isFiltering, setIsFiltering] = useState<boolean>(false)
 
-  const productsPerPage: number = 8
 
   useEffect(() => {
     const handleScroll = (): void => { setScrolled(window.scrollY > 100) }
@@ -184,14 +183,12 @@ export default function ShopLayout(): JSX.Element {
       setCategories(res.data.categories)
 
       if (params.subcategoryId) {
-        let foundCategoryId = null
         for (const cat of res.data.categories) {
           const subcategories = await fetchSubcategoriesForCategory(cat._id)
           const found = subcategories.find(s => s._id === params.subcategoryId)
           if (found) {
             setSelectedSubCategory(found._id)
             setSelectedSubCategoryName(found.name)
-            foundCategoryId = cat._id
             setCategories(prev => prev.map(c => 
               c._id === cat._id ? { ...c, subcategories } : c
             ))
@@ -243,7 +240,7 @@ export default function ShopLayout(): JSX.Element {
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current) }
   }, [searchTerm, selectedSubCategory, fetchProducts])
 
-  const handleCategoryClick = useCallback(async (categoryId: string, categoryName: string): Promise<void> => {
+  const handleCategoryClick = useCallback(async (categoryId: string, _categoryName?: string): Promise<void> => {
     const isExpanded = expandedCategories[categoryId]
     
     if (!isExpanded) {

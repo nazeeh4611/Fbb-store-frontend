@@ -11,10 +11,10 @@ import AboutPage from "../Components/Layouts/About";
 import SellerPages from "../Components/User/Sellers";
 import ContactPage from "../Components/Layouts/Contact";
 import CartPage from "../Components/User/Cart";
-import OrdersPage from "../Components/User/OrdersPage";
+// import OrdersPage from "../Components/User/OrdersPage";
 import OrderSuccess from "../Components/User/OrderSuccess";
 import CheckoutPage from "../Components/User/ChekoutPage";
-import OrderDetails from "../Components/User/OrderDetails";
+// import OrderDetails from "../Components/User/OrderDetails";
 import ProfilePage from "../Components/User/ProfilePage";
 
 const User: React.FC = () => {

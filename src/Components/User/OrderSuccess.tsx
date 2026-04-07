@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle, ShoppingBag, Home, Package, Truck, Clock, ChevronRight } from 'lucide-react';
 import NavBar from '../Layouts/Navbar';

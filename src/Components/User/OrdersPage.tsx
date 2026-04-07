@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Clock, Truck, CheckCircle, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, ShoppingBag } from 'lucide-react';
 import axios from 'axios';
 import { baseurl } from '../../Constant/Base';
 import NavBar from '../Layouts/Navbar';

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Package, Truck, CheckCircle, Clock, MapPin, CreditCard, Download, Printer, ChevronLeft } from 'lucide-react';
 import axios from 'axios';

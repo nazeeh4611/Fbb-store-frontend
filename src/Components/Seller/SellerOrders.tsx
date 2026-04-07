@@ -4,7 +4,7 @@ import {
   Package, Truck, CheckCircle, XCircle, Clock, 
   Search, Download, Eye, 
   Menu, X, LogOut, Phone,
-  BarChart3, ShoppingBag, TrendingUp, DollarSign
+  BarChart3, ShoppingBag, TrendingUp,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';

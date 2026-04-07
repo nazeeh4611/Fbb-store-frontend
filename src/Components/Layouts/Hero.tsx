@@ -11,7 +11,7 @@ import slider12 from "../Layouts/Img/slider1 2.jpeg";
 import TrendingCarousel from "./Carousel";
 import axios from "axios";
 import { baseurl } from "../../Constant/Base";
-import { Link, useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock, Shield, Truck, Award, Sparkles, Zap, Heart, Quote, Grid, Package } from "lucide-react";
 
 const Hero = ({ onShopNowClick = () => {} }) => {

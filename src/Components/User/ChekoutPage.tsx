@@ -207,7 +207,7 @@ const CheckoutPage = () => {
           }
 
           const options = {
-            key: "rzp_test_Rgm99jMXnxSkGK" || response.data.key_id,
+            key: "rzp_test_Rgm99jMXnxSkGK",
             amount: response.data.razorpayOrder.amount,
             currency: response.data.razorpayOrder.currency,
             name: "Your Store Name",
