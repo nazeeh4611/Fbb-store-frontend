@@ -1,4 +1,4 @@
-import { Heart, Search, ArrowRight, Star, Grid, List, X, Award, Truck, Shield, Package, ChevronDown, ChevronUp, Eye, Menu, SlidersHorizontal } from "lucide-react"
+import { Heart, Search, ArrowRight, Star, Grid, List, X, Package, ChevronDown, ChevronUp, Eye, Menu, SlidersHorizontal } from "lucide-react"
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Footer from "../Layouts/Footer"
@@ -632,16 +632,7 @@ export default function ShopLayout(): JSX.Element {
         <ChevronUp className="text-white h-5 w-5" />
       </motion.button>
 
-      <div className="bg-gray-900 text-white py-10 mt-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div><Award className="w-8 h-8 mx-auto mb-2 text-amber-400" /><p className="font-semibold text-sm">Premium Quality</p><p className="text-xs text-gray-400">Authentic products</p></div>
-            <div><Truck className="w-8 h-8 mx-auto mb-2 text-amber-400" /><p className="font-semibold text-sm">Free Shipping</p><p className="text-xs text-gray-400">On orders ₹5000+</p></div>
-            <div><Shield className="w-8 h-8 mx-auto mb-2 text-amber-400" /><p className="font-semibold text-sm">Secure Shopping</p><p className="text-xs text-gray-400">100% safe</p></div>
-            <div><Package className="w-8 h-8 mx-auto mb-2 text-amber-400" /><p className="font-semibold text-sm">Easy Returns</p><p className="text-xs text-gray-400">30-day policy</p></div>
-          </div>
-        </div>
-      </div>
+    
 
       <Footer />
     </div>
