@@ -96,10 +96,22 @@ const DashboardPage: React.FC = () => {
       const response = await api.get(`/seller/profile/${sellerId.userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUserData(response.data);
-      setEditForm(response.data);
-      if (response.data.Image) {
-        setProfileImagePreview(response.data.Image);
+      
+      // Fix: Access nested data property
+      const userDataResponse = response.data?.data || response.data;
+      
+      setUserData(userDataResponse);
+      setEditForm({
+        name: userDataResponse.name || '',
+        email: userDataResponse.email || '',
+        INR: userDataResponse.INR || '',
+        DXB: userDataResponse.DXB || '',
+        status: userDataResponse.status || false,
+        Image: userDataResponse.Image || ''
+      });
+      
+      if (userDataResponse.Image) {
+        setProfileImagePreview(userDataResponse.Image);
       }
     } catch (error) {
       toast.error('Failed to fetch user data');
@@ -174,14 +186,19 @@ const DashboardPage: React.FC = () => {
       
       if (response.data) {
         toast.success('Profile updated successfully');
+        const updatedData = response.data?.data || response.data;
+        
         setUserData({
-          ...editForm,
+          name: editForm.name,
           email: userData.email,
+          INR: editForm.INR,
+          DXB: editForm.DXB,
           status: userData.status,
-          Image: response.data.data.Image || userData.Image
+          Image: updatedData.Image || profileImagePreview
         });
-        if (response.data.data.Image) {
-          setProfileImagePreview(response.data.data.Image);
+        
+        if (updatedData.Image) {
+          setProfileImagePreview(updatedData.Image);
         }
         setIsEditing(false);
         setProfileImage(null);
@@ -222,7 +239,7 @@ const DashboardPage: React.FC = () => {
   );
 
   return (
-    <SellerLayout title="Dashboard" subtitle={`Welcome back, ${userData.name}!`}>
+    <SellerLayout title="Dashboard" subtitle={`Welcome back, ${userData.name || 'Seller'}!`}>
       <div className="flex items-center gap-4 mb-8">
         {userData.status ? (
           <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-full">
@@ -386,8 +403,8 @@ const DashboardPage: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-800">{userData.name}</h3>
-                    <p className="text-gray-600 mt-1">{userData.email}</p>
+                    <h3 className="text-2xl font-bold text-gray-800">{userData.name || 'No Name'}</h3>
+                    <p className="text-gray-600 mt-1">{userData.email || 'No Email'}</p>
                   </div>
                 </div>
 
