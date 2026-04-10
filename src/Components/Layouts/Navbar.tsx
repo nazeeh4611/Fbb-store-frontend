@@ -88,7 +88,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
   const [user, setUser] = useState<UserData | null>(null);
   const [isLogged, setIsLogged] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  
+
   const navigate = useNavigate();
 
   const api = axios.create({
@@ -97,10 +97,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
 
   const navItems: NavItem[] = [
     { label: 'Home', href: '/' },
-    { 
-      label: 'Shop', 
-      href: '/shop',
-    },
+    { label: 'Shop', href: '/shop' },
     { label: 'About', href: '/about' },
     { label: 'Contact', href: '/contact' },
     { label: 'Sell With Us', href: '/seller/dashboard' },
@@ -110,7 +107,6 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -122,12 +118,8 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
   }, []);
 
   useEffect(() => {
-    if (cartOpen) {
-      fetchCartData();
-    }
-    if (wishlistOpen) {
-      fetchWishlistData();
-    }
+    if (cartOpen) fetchCartData();
+    if (wishlistOpen) fetchWishlistData();
   }, [cartOpen, wishlistOpen]);
 
   useEffect(() => {
@@ -149,11 +141,9 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
         setUser(null);
         return;
       }
-
       const response = await api.get('/profile', {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       if (response.data.success) {
         setIsLogged(true);
         setUser(response.data.user);
@@ -164,7 +154,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
         setIsLogged(false);
         setUser(null);
       }
-    } catch (error) {
+    } catch {
       localStorage.removeItem('token');
       localStorage.removeItem('userData');
       setIsLogged(false);
@@ -208,7 +198,8 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
 
   const getBgColor = () => {
     if (!isTransparent) return 'bg-black';
-    return isScrolled ? 'bg-black' : 'bg-transparent';
+    if (isScrolled || isOpen) return 'bg-black';
+    return 'bg-black';
   };
 
   const handleNavClick = (href: string) => {
@@ -252,10 +243,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
   const updateCartQuantity = async (cartItemId: string, newQuantity: number) => {
     try {
       const token = localStorage.getItem('token');
-      await api.put('/cart/cart/update', {
-        cartItemId,
-        quantity: newQuantity
-      }, {
+      await api.put('/cart/cart/update', { cartItemId, quantity: newQuantity }, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       fetchCartData();
@@ -347,7 +335,6 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
           <h3 className="text-lg font-semibold text-gray-900">Shopping Cart</h3>
           <span className="text-sm text-gray-600">{cartCount} items</span>
         </div>
-        
         {cartItems.length === 0 ? (
           <div className="text-center py-8">
             <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -374,41 +361,29 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900 line-clamp-1">{item.product.name}</h4>
                     <p className="text-sm text-gray-600">{item.product.brand}</p>
-                    {item.selectedColor && (
-                      <p className="text-xs text-gray-500">Color: {item.selectedColor}</p>
-                    )}
-                    {item.selectedSize && (
-                      <p className="text-xs text-gray-500">Size: {item.selectedSize}</p>
-                    )}
+                    {item.selectedColor && <p className="text-xs text-gray-500">Color: {item.selectedColor}</p>}
+                    {item.selectedSize && <p className="text-xs text-gray-500">Size: {item.selectedSize}</p>}
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => updateCartQuantity(item._id, Math.max(1, item.quantity - 1))}
                           className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100"
-                        >
-                          -
-                        </button>
+                        >-</button>
                         <span className="w-8 text-center">{item.quantity}</span>
                         <button
                           onClick={() => updateCartQuantity(item._id, item.quantity + 1)}
                           className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-100"
-                        >
-                          +
-                        </button>
+                        >+</button>
                       </div>
                       <div className="font-semibold">₹{item.price * item.quantity}</div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => removeFromCart(item._id)}
-                    className="text-gray-400 hover:text-red-500"
-                  >
+                  <button onClick={() => removeFromCart(item._id)} className="text-gray-400 hover:text-red-500">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
               ))}
             </div>
-            
             <div className="pt-4 border-t border-gray-200">
               <div className="flex justify-between items-center mb-4">
                 <span className="text-gray-600">Subtotal</span>
@@ -416,20 +391,13 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => {
-                    setCartOpen(false);
-                    navigate('/cart');
-                  }}
+                  onClick={() => { setCartOpen(false); navigate('/cart'); }}
                   className="px-4 py-2 border border-black text-black rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  View Cart
-                </button>
+                >View Cart</button>
                 <button
                   onClick={handleCheckout}
                   className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900 transition-colors"
-                >
-                  Checkout
-                </button>
+                >Checkout</button>
               </div>
             </div>
           </>
@@ -445,15 +413,11 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
           <h3 className="text-lg font-semibold text-gray-900">Wishlist</h3>
           <span className="text-sm text-gray-600">{wishlistCount} items</span>
         </div>
-        
         {wishlistItems.length === 0 ? (
           <div className="text-center py-8">
             <Heart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">Your wishlist is empty</p>
-            <button
-              onClick={() => navigate('/seller-list')}
-              className="mt-4 text-amber-500 hover:text-amber-600 font-medium"
-            >
+            <button onClick={() => navigate('/seller-list')} className="mt-4 text-amber-500 hover:text-amber-600 font-medium">
               Start Shopping
             </button>
           </div>
@@ -474,16 +438,10 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
                   <div className="font-semibold mt-1">₹{item.product.priceINR}</div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => moveToCart(item.product._id)}
-                    className="px-3 py-1 bg-black text-white text-xs rounded hover:bg-gray-900"
-                  >
+                  <button onClick={() => moveToCart(item.product._id)} className="px-3 py-1 bg-black text-white text-xs rounded hover:bg-gray-900">
                     Add to Cart
                   </button>
-                  <button
-                    onClick={() => removeFromWishlist(item.product._id)}
-                    className="px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded hover:bg-gray-100"
-                  >
+                  <button onClick={() => removeFromWishlist(item.product._id)} className="px-3 py-1 border border-gray-300 text-gray-600 text-xs rounded hover:bg-gray-100">
                     Remove
                   </button>
                 </div>
@@ -534,15 +492,14 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
 
   return (
     <>
-      <nav
-        className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 h-20 ${getBgColor()} border-b border-gray-800/50`}
-      >
+      <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 h-20 ${getBgColor()} border-b border-gray-800/50`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
           <div className="flex items-center justify-between h-full">
+
             <div className="flex-shrink-0 flex items-center">
-              <img 
-                src={fbb} 
-                alt="FBB Luxury" 
+              <img
+                src={fbb}
+                alt="FBB Luxury"
                 className="h-16 w-auto object-contain cursor-pointer hover:opacity-90 transition-opacity duration-300"
                 onClick={() => navigate('/')}
               />
@@ -559,7 +516,6 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
                       {item.label}
                       {item.subItems && <ChevronDown className="w-4 h-4" />}
                     </button>
-                    
                     {item.subItems && (
                       <div className="absolute left-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
                         <div className="bg-black/95 backdrop-blur-lg border border-gray-800 rounded-lg shadow-2xl py-3 min-w-[200px]">
@@ -584,10 +540,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
               {isLogged ? (
                 <>
                   <div className="relative">
-                    <button
-                      onClick={handleWishlistClick}
-                      className="text-white hover:text-amber-400 transition-colors duration-300 relative"
-                    >
+                    <button onClick={handleWishlistClick} className="text-white hover:text-amber-400 transition-colors duration-300 relative">
                       <Heart className="h-6 w-6" />
                       {wishlistCount > 0 && (
                         <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -597,12 +550,9 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
                     </button>
                     {wishlistOpen && <WishlistPopup />}
                   </div>
-                  
+
                   <div className="relative">
-                    <button
-                      onClick={handleCartClick}
-                      className="text-white hover:text-amber-400 transition-colors duration-300 relative"
-                    >
+                    <button onClick={handleCartClick} className="text-white hover:text-amber-400 transition-colors duration-300 relative">
                       <ShoppingCart className="h-6 w-6" />
                       {cartCount > 0 && (
                         <span className="absolute -top-2 -right-2 bg-amber-500 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -636,35 +586,50 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
               )}
             </div>
 
-            <div className="lg:hidden">
+            <div className="lg:hidden flex items-center gap-4">
+              {isLogged && (
+                <>
+                  <button onClick={handleWishlistClick} className="text-white hover:text-amber-400 transition-colors duration-300 relative">
+                    <Heart className="h-5 w-5" />
+                    {wishlistCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </button>
+                  <button onClick={handleCartClick} className="text-white hover:text-amber-400 transition-colors duration-300 relative">
+                    <ShoppingCart className="h-5 w-5" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-amber-500 text-black text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+                </>
+              )}
               <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="text-white hover:text-amber-400 focus:outline-none transition-colors duration-300"
                 aria-label="Toggle menu"
               >
-                {isOpen ? (
-                  <X className="h-7 w-7" />
-                ) : (
-                  <Menu className="h-7 w-7" />
-                )}
+                {isOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
               </button>
             </div>
           </div>
         </div>
 
         {isOpen && (
-          <div className="lg:hidden absolute w-full bg-black/95 backdrop-blur-lg border-t border-gray-800 shadow-xl z-50 max-h-[calc(100vh-5rem)] overflow-y-auto">
-            <div className="px-4 py-6 space-y-1">
+          <div className="lg:hidden absolute w-full bg-black backdrop-blur-lg border-t border-gray-800 shadow-xl z-50 max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <div className="px-4 py-4 space-y-1">
               {navItems.map((item) => (
                 <div key={item.label}>
                   <button
                     onClick={() => item.subItems ? toggleDropdown(item.label) : handleNavClick(item.href)}
-                    className="text-white hover:text-amber-400 block w-full text-left px-4 py-4 text-lg font-medium border-b border-gray-800 flex items-center justify-between"
+                    className="text-white hover:text-amber-400 flex w-full text-left px-4 py-4 text-lg font-medium border-b border-gray-800 items-center justify-between"
                   >
                     {item.label}
                     {item.subItems && <ChevronDown className={`w-5 h-5 transition-transform ${activeDropdown === item.label ? 'rotate-180' : ''}`} />}
                   </button>
-                  
                   {item.subItems && activeDropdown === item.label && (
                     <div className="pl-8 py-2 bg-gray-900/50">
                       {item.subItems.map((subItem) => (
@@ -680,62 +645,46 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
                   )}
                 </div>
               ))}
-              
-              <div className="flex items-center justify-around px-4 pt-6 border-t border-gray-800">
+
+              <div className="flex items-center justify-around px-4 pt-4 pb-2 border-t border-gray-800">
                 {isLogged ? (
                   <>
-                    <button
-                      onClick={() => {
-                        handleWishlistClick();
-                        setIsOpen(false);
-                      }}
-                      className="text-white hover:text-amber-400 transition-colors duration-300 relative"
-                    >
-                      <Heart className="h-6 w-6" />
-                      {wishlistCount > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                          {wishlistCount}
-                        </span>
-                      )}
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        handleCartClick();
-                        setIsOpen(false);
-                      }}
-                      className="text-white hover:text-amber-400 transition-colors duration-300 relative"
-                    >
-                      <ShoppingCart className="h-6 w-6" />
-                      {cartCount > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-amber-500 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                          {cartCount}
-                        </span>
-                      )}
-                    </button>
-
                     <div className="text-center">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 flex items-center justify-center mx-auto mb-2">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 flex items-center justify-center mx-auto mb-1">
                         <span className="text-white font-bold text-sm">
                           {user?.name?.charAt(0)?.toUpperCase()}
                         </span>
                       </div>
-                      <p className="text-white text-sm truncate max-w-[100px]">{user?.name}</p>
+                      <p className="text-white text-xs truncate max-w-[80px]">{user?.name}</p>
                     </div>
-
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsOpen(false)}
+                      className="flex flex-col items-center gap-1 text-white hover:text-amber-400"
+                    >
+                      <User className="h-5 w-5" />
+                      <span className="text-xs">Profile</span>
+                    </Link>
+                    <Link
+                      to="/profile"
+                      state={{ activeTab: 'orders' }}
+                      onClick={() => setIsOpen(false)}
+                      className="flex flex-col items-center gap-1 text-white hover:text-amber-400"
+                    >
+                      <Package className="h-5 w-5" />
+                      <span className="text-xs">Orders</span>
+                    </Link>
                     <button
                       onClick={handleLogout}
-                      className="text-white hover:text-red-400 transition-colors duration-300"
+                      className="flex flex-col items-center gap-1 text-white hover:text-red-400 transition-colors duration-300"
                     >
-                      <LogOut className="h-6 w-6" />
+                      <LogOut className="h-5 w-5" />
+                      <span className="text-xs">Logout</span>
                     </button>
                   </>
                 ) : (
                   <button
-                    onClick={() => {
-                      setShowAuthModal(true);
-                      setIsOpen(false);
-                    }}
+                    onClick={() => { setShowAuthModal(true); setIsOpen(false); }}
                     className="px-6 py-2.5 rounded-full bg-amber-500 text-white text-sm font-semibold shadow-md hover:bg-amber-600 transition-colors"
                   >
                     Sign In
@@ -750,25 +699,18 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
       {(cartOpen || wishlistOpen) && (
         <div
           className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => {
-            setCartOpen(false);
-            setWishlistOpen(false);
-          }}
+          onClick={() => { setCartOpen(false); setWishlistOpen(false); }}
         />
       )}
 
-      <div className="pt-20">
-      </div>
+      <div className="pt-20" />
 
       <AuthModal
         show={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onRegisterSuccess={handleRegisterSuccess}
         onLoginSuccess={handleLoginSuccess}
-        onForgotPassword={() => {
-          setShowAuthModal(false);
-          setShowForgotPasswordModal(true);
-        }}
+        onForgotPassword={() => { setShowAuthModal(false); setShowForgotPasswordModal(true); }}
       />
 
       <OtpModal
@@ -776,7 +718,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
         onClose={() => setShowOtpModal(false)}
         email={registeredEmail}
         onVerifySuccess={handleOtpVerifySuccess}
-        onLoginSuccess={handleLoginSuccess} 
+        onLoginSuccess={handleLoginSuccess}
       />
 
       <ForgotPasswordModal
