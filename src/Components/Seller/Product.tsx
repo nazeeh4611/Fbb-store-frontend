@@ -1,3 +1,4 @@
+// SellerProductPage.tsx - Fixed
 import React, { useEffect, useState } from 'react';
 import { PlusCircle, X, Upload, Edit2, Search, ChevronLeft, ChevronRight, Trash2, Film, Image, Package, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { baseurl } from '../../Constant/Base';
@@ -5,7 +6,6 @@ import axios from "axios";
 import ExtractToken from '../../Token/Extract';
 import { useGetToken } from '../../Token/getToken';
 import { toast } from 'react-hot-toast';
-// import { useNavigate } from 'react-router-dom';
 import { SellerLayout } from './SellerLayout';
 
 interface Category {
@@ -257,7 +257,6 @@ const SellerProductPage = () => {
 
   const api = axios.create({ baseURL: baseurl });
   const [seller, setSeller] = useState<Seller>({ name: '', status: false });
-  // const navigate = useNavigate();
   const token = useGetToken('sellerToken');
   const sellerId = ExtractToken(token);
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
@@ -273,7 +272,8 @@ const SellerProductPage = () => {
   const getSeller = async () => {
     try {
       const response = await api.get(`/seller/profile/${sellerId.userId}`);
-      setSeller({ name: response.data.name, status: response.data.status });
+      const sellerData = response.data?.data || response.data;
+      setSeller({ name: sellerData.name || '', status: sellerData.status || false });
     } catch (error) {
       toast.error('Failed to fetch seller information');
     }
@@ -312,21 +312,25 @@ const SellerProductPage = () => {
   const getCategories = async () => {
     try {
       const response = await api.get('/admin/get-category');
-      if (response.data && Array.isArray(response.data)) setCategories(response.data);
+      const data = response.data?.data || response.data;
+      if (data && Array.isArray(data)) setCategories(data);
     } catch {}
   };
 
   const getSubCategories = async () => {
     try {
       const response = await api.get('/admin/get-subcategory');
-      if (response.data && Array.isArray(response.data)) setSubCategories(response.data);
+      const data = response.data?.data || response.data;
+      if (data && Array.isArray(data)) setSubCategories(data);
     } catch {}
   };
 
   const getProducts = async () => {
     try {
       const response = await api.get(`/seller/get-products/${sellerId.userId}`);
-      if (response.data.products && Array.isArray(response.data.products)) setProducts(response.data.products);
+      const data = response.data?.data || response.data;
+      if (data.products && Array.isArray(data.products)) setProducts(data.products);
+      else if (Array.isArray(data)) setProducts(data);
     } catch {}
   };
 
@@ -714,7 +718,7 @@ const SellerProductPage = () => {
                         <><CheckCircle size={10} className="mr-1" /> {product.stock} units</>
                       )}
                     </span>
-                    </td>
+                   </td>
                   <td className="py-3 px-4 text-gray-500 text-xs font-mono">{product.sku}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
@@ -733,7 +737,7 @@ const SellerProductPage = () => {
                         <Trash2 size="16" />
                       </button>
                     </div>
-                    </td>
+                   </td>
                  </tr>
               )) : (
                 <tr>
@@ -745,7 +749,7 @@ const SellerProductPage = () => {
                  </tr>
               )}
             </tbody>
-          </table>
+           </table>
         </div>
 
         {deleteModalOpen && (
