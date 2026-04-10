@@ -10,14 +10,15 @@ const SellerReProtect: React.FC<ReverseProtectedRouteProps> = ({
   component: Component,
 }) => {
   const token = useGetToken("sellerToken");
-  console.log(token,"is geting")
   const location = useLocation();
 
-  return !token ? (
-    <Component /> 
-  ) : (
-    <Navigate to="/seller/" state={{ from: location }} />
-  );
+  // If NOT logged in, show the login/register page
+  if (!token) {
+    return <Component />;
+  }
+  
+  // If already logged in, redirect to dashboard
+  return <Navigate to="/seller/dashboard" state={{ from: location }} replace />;
 };
 
 export default SellerReProtect;

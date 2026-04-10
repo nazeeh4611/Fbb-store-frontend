@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import SellerRegistration from "../Components/Seller/Register";
 import SellerLogin from "../Components/Seller/Login";
 import SellerProductPage from "../Components/Seller/Product";
@@ -13,12 +13,19 @@ const Seller: React.FC = () => {
     return (
       <>
         <Routes>
+          {/* Public routes - only accessible when NOT logged in */}
           <Route path="/register" element={<SellerReProtect component={SellerRegistration} />} />
-          <Route path="/" element={<SellerReProtect component={SellerLogin} />} />   
+          <Route path="/login" element={<SellerReProtect component={SellerLogin} />} />   
+          
+          {/* Protected Routes - all require authentication */}
           <Route path="/product" element={<SellerProtect component={SellerProductPage} />} />   
           <Route path="/dashboard" element={<SellerProtect component={DashboardPage} />} />   
           <Route path="/sales-report" element={<SellerProtect component={SalesReportPage} />} />   
           <Route path="/orders" element={<SellerProtect component={SellerOrders} />} />   
+          
+          {/* Default redirect - if logged in go to dashboard, else go to login */}
+          <Route path="/" element={<Navigate to="/seller/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/seller/login" replace />} />
         </Routes>
       </>
     );

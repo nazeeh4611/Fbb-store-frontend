@@ -1,18 +1,22 @@
+import { useState, useEffect } from "react";
 
 export const useGetToken = (name: string) => {
-    try {
-        console.log("Name received:", name);
-        const localStorageToken = localStorage.getItem(name);
+    const [token, setToken] = useState<string | null>(() => {
+        // Initial value from localStorage
+        return localStorage.getItem(name);
+    });
 
-        if (localStorageToken) {
-          return localStorageToken
-        } else {
-            console.log("No token found in localStorage for", name);
-        }
+    useEffect(() => {
+        const handleStorageChange = () => {
+            setToken(localStorage.getItem(name));
+        };
+        
+        window.addEventListener('storage', handleStorageChange);
+        
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [name]);
 
-        return null;
-    } catch (error) {
-        console.error("Error occurred while getting token:", error);
-        return null;
-    }
+    return token;
 };

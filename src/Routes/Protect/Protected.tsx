@@ -10,14 +10,14 @@ const Protect: React.FC<ProtectedRouteProps> = ({
   component: Component,
 }) => {
   const token = useGetToken("adminToken");
-    console.log(token,"token is getting")
   const location = useLocation();
 
-  return (token? (
-    <Component/>
-  ):(
-    <Navigate to="/admin/login" state={{from:location}} />
-  ))
+  if (token) {
+    return <Component />;
+  }
+  
+  // Redirect to login and save the attempted location
+  return <Navigate to="/admin/login" state={{ from: location }} replace />;
 };
 
 export default Protect;

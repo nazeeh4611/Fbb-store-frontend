@@ -10,14 +10,15 @@ const ReProtect: React.FC<ReverseProtectedRouteProps> = ({
   component: Component,
 }) => {
   const token = useGetToken("adminToken");
-  console.log(token,"is geting")
   const location = useLocation();
 
-  return !token ? (
-    <Component /> 
-  ) : (
-    <Navigate to="/admin/login" state={{ from: location }} />
-  );
+  // If NOT logged in, show the login/register page
+  if (!token) {
+    return <Component />;
+  }
+  
+  // If already logged in, redirect to products page
+  return <Navigate to="/admin/product" state={{ from: location }} replace />;
 };
 
 export default ReProtect;
