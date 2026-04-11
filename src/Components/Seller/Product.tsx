@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { PlusCircle, X, Upload, Edit2, Search, ChevronLeft, ChevronRight, Trash2, Film, Image, Package, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { baseurl } from '../../Constant/Base';
 import axios from "axios";
@@ -147,35 +147,27 @@ const getFieldConfig = (categoryName: string, subCategoryName: string): FieldCon
   if (cat.includes('kids') || cat.includes('fashion') || cat.includes('clothing') || cat.includes('apparel')) {
     return { ...defaults, showColors: true, showSizes: true, showMaterial: true, showDimensions: false, showWarranty: false };
   }
-
   if (cat.includes('home') || cat.includes('kitchen')) {
     return { ...defaults, showColors: true, showSizes: false, showMaterial: true, showDimensions: true, showWarranty: true, showSpecifications: true };
   }
-
   if (cat.includes('gadget') || cat.includes('electronics') || cat.includes('tech')) {
     return { ...defaults, showColors: true, showSizes: false, showMaterial: false, showDimensions: true, showWarranty: true, showSpecifications: true };
   }
-
   if (cat.includes('game') || cat.includes('gift') || cat.includes('toy')) {
     return { ...defaults, showColors: true, showSizes: false, showMaterial: true, showDimensions: true, showWarranty: false, showSpecifications: false };
   }
-
   if (cat.includes('e-cig') || cat.includes('ecig') || cat.includes('vape')) {
     return { ...defaults, showColors: true, showSizes: false, showMaterial: false, showDimensions: false, showWarranty: false, showSpecifications: true };
   }
-
   if (sub.includes('footwear') || sub.includes('footware') || sub.includes('shoe')) {
     return { ...defaults, showColors: true, showSizes: true, showMaterial: true, showDimensions: false, showWarranty: false };
   }
-
   if (sub.includes('outfit') || sub.includes('shirt') || sub.includes('clothing') || sub.includes('apparel') || sub.includes('premium')) {
     return { ...defaults, showColors: true, showSizes: true, showMaterial: true, showDimensions: false, showWarranty: false };
   }
-
   if (sub.includes('cosmetic') || sub.includes('beauty') || sub.includes('skincare')) {
     return { ...defaults, showColors: false, showSizes: false, showMaterial: false, showDimensions: false, showWarranty: false, showSpecifications: true };
   }
-
   if (sub.includes('vape') || sub.includes('e-cig') || sub.includes('ecig')) {
     return { ...defaults, showColors: true, showSizes: false, showMaterial: false, showDimensions: false, showWarranty: false, showSpecifications: true };
   }
@@ -271,21 +263,43 @@ const SellerProductPage = () => {
   const sellerId = ExtractToken(token);
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
 
+  const hasSpecificationsTab = fieldConfig.showSpecifications || fieldConfig.showColors || fieldConfig.showSizes || fieldConfig.showMaterial || fieldConfig.showWeight || fieldConfig.showDimensions || fieldConfig.showWarranty;
+  const hasSeoTab = fieldConfig.showDiscount || fieldConfig.showShipping || fieldConfig.showSEO;
+
+  const tabs = useMemo(() => [
+    { id: 'basic', label: 'Basic Info', required: true },
+    ...(hasSpecificationsTab ? [{ id: 'specifications', label: 'Specifications', required: false }] : []),
+    { id: 'media', label: 'Media', required: true },
+    ...(hasSeoTab ? [{ id: 'seo', label: 'SEO & Shipping', required: false }] : []),
+  ], [hasSpecificationsTab, hasSeoTab]);
+
+  const getNextTab = () => {
+    const idx = tabs.findIndex((t) => t.id === activeTab);
+    return idx < tabs.length - 1 ? tabs[idx + 1].id : null;
+  };
+
+  const getPrevTab = () => {
+    const idx = tabs.findIndex((t) => t.id === activeTab);
+    return idx > 0 ? tabs[idx - 1].id : null;
+  };
+
+  const isLastTab = () => {
+    const idx = tabs.findIndex((t) => t.id === activeTab);
+    return idx === tabs.length - 1;
+  };
+
   const validateForm = (): ValidationErrors => {
     const errors: ValidationErrors = {};
 
     if (!formData.name.trim()) {
       errors.name = 'Product name is required';
     }
-
     if (!formData.priceINR || parseFloat(formData.priceINR) <= 0) {
       errors.priceINR = 'Valid price (INR) is required';
     }
-
     if (!formData.categoryId) {
       errors.categoryId = 'Please select a category';
     }
-
     if (!formData.subCategoryId) {
       errors.subCategoryId = 'Please select a sub-category';
     }
@@ -406,9 +420,7 @@ const SellerProductPage = () => {
     setFormData((prev) => ({ ...prev, categoryId, subCategoryId: '' }));
     updateFieldConfig(categoryId, '');
     handleFieldTouch('categoryId');
-    if (categoryId) {
-      clearFieldError('categoryId');
-    }
+    if (categoryId) clearFieldError('categoryId');
   };
 
   const handleSubCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -416,9 +428,7 @@ const SellerProductPage = () => {
     setFormData((prev) => ({ ...prev, subCategoryId }));
     updateFieldConfig(formData.categoryId, subCategoryId);
     handleFieldTouch('subCategoryId');
-    if (subCategoryId) {
-      clearFieldError('subCategoryId');
-    }
+    if (subCategoryId) clearFieldError('subCategoryId');
   };
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>, index: number, mediaType: 'image' | 'video') => {
@@ -446,10 +456,7 @@ const SellerProductPage = () => {
       if (formData.existingImages[idx] && formData.existingImages[idx] !== '') return true;
       return false;
     });
-
-    if (hasImage) {
-      clearFieldError('images');
-    }
+    if (hasImage) clearFieldError('images');
   };
 
   const removeMedia = (index: number) => {
@@ -476,12 +483,9 @@ const SellerProductPage = () => {
       if (formData.existingImages[idx] && formData.existingImages[idx] !== '') return true;
       return false;
     });
-
     if (!hasImage) {
       const errors = validateForm();
-      if (errors.images) {
-        setValidationErrors(prev => ({ ...prev, images: errors.images }));
-      }
+      if (errors.images) setValidationErrors(prev => ({ ...prev, images: errors.images }));
     } else {
       clearFieldError('images');
     }
@@ -584,46 +588,59 @@ const SellerProductPage = () => {
     setIsModalOpen(true);
   };
 
+  const validateTabFields = (tabId: string): boolean => {
+    const errors = validateForm();
+
+    if (tabId === 'basic') {
+      const basicErrors: ValidationErrors = {};
+      if (errors.name) basicErrors.name = errors.name;
+      if (errors.priceINR) basicErrors.priceINR = errors.priceINR;
+      if (errors.categoryId) basicErrors.categoryId = errors.categoryId;
+      if (errors.subCategoryId) basicErrors.subCategoryId = errors.subCategoryId;
+      if (Object.keys(basicErrors).length > 0) {
+        setValidationErrors(prev => ({ ...prev, ...basicErrors }));
+        return false;
+      }
+      return true;
+    }
+
+    if (tabId === 'media') {
+      if (errors.images) {
+        setValidationErrors(prev => ({ ...prev, images: errors.images }));
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  };
+
   const handleNextTab = () => {
-    const currentIsValid = validateTab(activeTab);
+    const touchMap: Record<string, string[]> = {
+      basic: ['name', 'priceINR', 'categoryId', 'subCategoryId'],
+      media: ['images'],
+    };
+    const fieldsToTouch = touchMap[activeTab] || [];
+    fieldsToTouch.forEach(f => handleFieldTouch(f));
 
+    const currentIsValid = validateTabFields(activeTab);
     if (!currentIsValid) {
-      const missingFields: string[] = [];
-      const errors = validateForm();
-      if (errors.name) missingFields.push('Product Name');
-      if (errors.priceINR) missingFields.push('Price (INR)');
-      if (errors.categoryId) missingFields.push('Category');
-      if (errors.subCategoryId) missingFields.push('Sub-Category');
-      if (errors.images && activeTab === 'media') missingFields.push('Product Image');
-
-      if (missingFields.length > 0) {
-        toast.error(`Please fill required fields: ${missingFields.join(', ')}`);
-      } else if (errors.images) {
+      if (activeTab === 'basic') {
+        const errors = validateForm();
+        const missingFields: string[] = [];
+        if (errors.name) missingFields.push('Product Name');
+        if (errors.priceINR) missingFields.push('Price (INR)');
+        if (errors.categoryId) missingFields.push('Category');
+        if (errors.subCategoryId) missingFields.push('Sub-Category');
+        if (missingFields.length > 0) toast.error(`Please fill required fields: ${missingFields.join(', ')}`);
+      } else if (activeTab === 'media') {
         toast.error('Please add at least one product image');
       }
       return;
     }
 
     const nextTab = getNextTab();
-    if (nextTab) {
-      setActiveTab(nextTab);
-    }
-  };
-
-  const validateTab = (tabId: string): boolean => {
-    const errors = validateForm();
-    setValidationErrors(errors);
-
-    if (tabId === 'basic') {
-      const hasError = errors.name || errors.priceINR || errors.categoryId || errors.subCategoryId;
-      return !hasError;
-    }
-
-    if (tabId === 'media') {
-      return !errors.images;
-    }
-
-    return true;
+    if (nextTab) setActiveTab(nextTab);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -647,7 +664,6 @@ const SellerProductPage = () => {
       if (errors.categoryId) errorMessages.push('Category');
       if (errors.subCategoryId) errorMessages.push('Sub-Category');
       if (errors.images) errorMessages.push('Product Image');
-
       toast.error(`Please fill required fields: ${errorMessages.join(', ')}`);
       setActiveTab('basic');
       return;
@@ -761,30 +777,6 @@ const SellerProductPage = () => {
       <span className="ml-3 text-sm font-medium text-gray-700">{label}</span>
     </label>
   );
-
-  const hasSpecificationsTab = fieldConfig.showSpecifications || fieldConfig.showColors || fieldConfig.showSizes || fieldConfig.showMaterial || fieldConfig.showWeight || fieldConfig.showDimensions || fieldConfig.showWarranty;
-
-  const tabs = [
-    { id: 'basic', label: 'Basic Info', required: true },
-    ...(hasSpecificationsTab ? [{ id: 'specifications', label: 'Specifications', required: false }] : []),
-    { id: 'media', label: 'Media', required: true },
-    ...(fieldConfig.showDiscount || fieldConfig.showShipping || fieldConfig.showSEO ? [{ id: 'seo', label: 'SEO & Shipping', required: false }] : []),
-  ];
-
-  const getNextTab = () => {
-    const idx = tabs.findIndex((t) => t.id === activeTab);
-    return idx < tabs.length - 1 ? tabs[idx + 1].id : null;
-  };
-
-  const getPrevTab = () => {
-    const idx = tabs.findIndex((t) => t.id === activeTab);
-    return idx > 0 ? tabs[idx - 1].id : null;
-  };
-
-  const isLastTab = () => {
-    const idx = tabs.findIndex((t) => t.id === activeTab);
-    return idx === tabs.length - 1;
-  };
 
   useEffect(() => {
     getSeller();
@@ -964,9 +956,7 @@ const SellerProductPage = () => {
                     key={n}
                     onClick={() => setCurrentPage(n)}
                     className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                      currentPage === n
-                        ? 'bg-blue-500 text-white'
-                        : 'border border-gray-200 hover:bg-gray-50'
+                      currentPage === n ? 'bg-blue-500 text-white' : 'border border-gray-200 hover:bg-gray-50'
                     }`}
                   >
                     {n}
@@ -990,7 +980,9 @@ const SellerProductPage = () => {
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-xl">
             <div className="flex justify-between items-center p-5 border-b border-gray-100">
               <h3 className="text-xl font-semibold text-gray-800">{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={22} /></button>
+              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={22} />
+              </button>
             </div>
 
             <div className="flex border-b border-gray-100 overflow-x-auto px-2">
@@ -998,9 +990,7 @@ const SellerProductPage = () => {
                 <button
                   key={tab.id}
                   className={`px-5 py-3 font-medium text-sm whitespace-nowrap transition-colors relative ${
-                    activeTab === tab.id
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
+                    activeTab === tab.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
                   }`}
                   onClick={() => setActiveTab(tab.id)}
                 >
@@ -1041,9 +1031,7 @@ const SellerProductPage = () => {
                           onChange={(e) => {
                             setFormData({ ...formData, name: e.target.value });
                             handleFieldTouch('name');
-                            if (e.target.value.trim()) {
-                              clearFieldError('name');
-                            }
+                            if (e.target.value.trim()) clearFieldError('name');
                           }}
                           onBlur={() => handleFieldTouch('name')}
                           className={`${inputClass} ${validationErrors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
@@ -1111,9 +1099,7 @@ const SellerProductPage = () => {
                           onChange={(e) => {
                             setFormData({ ...formData, priceINR: e.target.value });
                             handleFieldTouch('priceINR');
-                            if (e.target.value && parseFloat(e.target.value) > 0) {
-                              clearFieldError('priceINR');
-                            }
+                            if (e.target.value && parseFloat(e.target.value) > 0) clearFieldError('priceINR');
                           }}
                           onBlur={() => handleFieldTouch('priceINR')}
                           className={`${inputClass} ${validationErrors.priceINR ? 'border-red-500 focus:ring-red-500' : ''}`}
@@ -1360,16 +1346,28 @@ const SellerProductPage = () => {
 
                 <div className="sticky bottom-0 bg-white pt-5 pb-2 border-t border-gray-100 mt-6">
                   <div className="flex justify-between items-center">
-                    <button type="button" onClick={() => { const prev = getPrevTab(); if (prev) setActiveTab(prev); else handleCloseModal(); }} className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium">
+                    <button
+                      type="button"
+                      onClick={() => { const prev = getPrevTab(); if (prev) setActiveTab(prev); else handleCloseModal(); }}
+                      className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+                    >
                       {getPrevTab() ? 'Back' : 'Cancel'}
                     </button>
                     <div className="flex gap-3">
                       {!isLastTab() ? (
-                        <button type="button" onClick={handleNextTab} className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
+                        <button
+                          type="button"
+                          onClick={handleNextTab}
+                          className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                        >
                           Next
                         </button>
                       ) : (
-                        <button type="submit" disabled={isLoading} className="px-5 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-60 font-medium">
+                        <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="px-5 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-60 font-medium"
+                        >
                           {isLoading ? (editingProduct ? 'Saving...' : 'Creating...') : (editingProduct ? 'Update Product' : 'Save Product')}
                         </button>
                       )}
