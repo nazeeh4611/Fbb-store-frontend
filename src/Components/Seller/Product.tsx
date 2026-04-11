@@ -273,18 +273,18 @@ const SellerProductPage = () => {
     ...(hasSeoTab ? [{ id: 'seo', label: 'SEO & Shipping', required: false }] : []),
   ], [hasSpecificationsTab, hasSeoTab]);
 
-  const getNextTab = () => {
-    const idx = tabs.findIndex((t) => t.id === activeTab);
+  const getNextTab = (currentTabId: string) => {
+    const idx = tabs.findIndex((t) => t.id === currentTabId);
     return idx < tabs.length - 1 ? tabs[idx + 1].id : null;
   };
 
-  const getPrevTab = () => {
-    const idx = tabs.findIndex((t) => t.id === activeTab);
+  const getPrevTab = (currentTabId: string) => {
+    const idx = tabs.findIndex((t) => t.id === currentTabId);
     return idx > 0 ? tabs[idx - 1].id : null;
   };
 
-  const isLastTab = () => {
-    const idx = tabs.findIndex((t) => t.id === activeTab);
+  const isLastTab = (currentTabId: string) => {
+    const idx = tabs.findIndex((t) => t.id === currentTabId);
     return idx === tabs.length - 1;
   };
 
@@ -615,7 +615,10 @@ const SellerProductPage = () => {
     return true;
   };
 
-  const handleNextTab = () =>  {
+  const handleNextTab = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const touchMap: Record<string, string[]> = {
       basic: ['name', 'priceINR', 'categoryId', 'subCategoryId'],
       media: ['images'],
@@ -639,7 +642,7 @@ const SellerProductPage = () => {
       return;
     }
 
-    const nextTab = getNextTab();
+    const nextTab = getNextTab(activeTab);
     if (nextTab) setActiveTab(nextTab);
   };
 
@@ -648,6 +651,10 @@ const SellerProductPage = () => {
 
     if (!seller.status) {
       toast.error('Your account is pending approval. Please contact admin for more information.');
+      return;
+    }
+
+    if (!isLastTab(activeTab)) {
       return;
     }
 
@@ -989,6 +996,7 @@ const SellerProductPage = () => {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
+                  type="button"
                   className={`px-5 py-3 font-medium text-sm whitespace-nowrap transition-colors relative ${
                     activeTab === tab.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -1035,7 +1043,6 @@ const SellerProductPage = () => {
                           }}
                           onBlur={() => handleFieldTouch('name')}
                           className={`${inputClass} ${validationErrors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
-                          required
                         />
                         {getFieldError('name') && <p className={errorClass}>{getFieldError('name')}</p>}
                       </div>
@@ -1065,7 +1072,6 @@ const SellerProductPage = () => {
                           onChange={handleCategoryChange}
                           onBlur={() => handleFieldTouch('categoryId')}
                           className={`${inputClass} ${validationErrors.categoryId ? 'border-red-500 focus:ring-red-500' : ''}`}
-                          required
                         >
                           <option value="">Select Category</option>
                           {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
@@ -1081,7 +1087,6 @@ const SellerProductPage = () => {
                           onChange={handleSubCategoryChange}
                           onBlur={() => handleFieldTouch('subCategoryId')}
                           className={`${inputClass} ${validationErrors.subCategoryId ? 'border-red-500 focus:ring-red-500' : ''}`}
-                          required
                           disabled={!formData.categoryId}
                         >
                           <option value="">Select Sub Category</option>
@@ -1103,7 +1108,6 @@ const SellerProductPage = () => {
                           }}
                           onBlur={() => handleFieldTouch('priceINR')}
                           className={`${inputClass} ${validationErrors.priceINR ? 'border-red-500 focus:ring-red-500' : ''}`}
-                          required
                           min="0"
                           step="0.01"
                         />
@@ -1348,13 +1352,13 @@ const SellerProductPage = () => {
                   <div className="flex justify-between items-center">
                     <button
                       type="button"
-                      onClick={() => { const prev = getPrevTab(); if (prev) setActiveTab(prev); else handleCloseModal(); }}
+                      onClick={() => { const prev = getPrevTab(activeTab); if (prev) setActiveTab(prev); else handleCloseModal(); }}
                       className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
                     >
-                      {getPrevTab() ? 'Back' : 'Cancel'}
+                      {getPrevTab(activeTab) ? 'Back' : 'Cancel'}
                     </button>
                     <div className="flex gap-3">
-                      {!isLastTab() ? (
+                      {!isLastTab(activeTab) ? (
                         <button
                           type="button"
                           onClick={handleNextTab}
