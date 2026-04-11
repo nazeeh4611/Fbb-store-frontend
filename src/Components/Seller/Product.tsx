@@ -615,7 +615,7 @@ const SellerProductPage = () => {
     return true;
   };
 
-  const handleNextTab = () => {
+  const handleNextTab = () =>  {
     const touchMap: Record<string, string[]> = {
       basic: ['name', 'priceINR', 'categoryId', 'subCategoryId'],
       media: ['images'],
@@ -1017,11 +1017,7 @@ const SellerProductPage = () => {
             )}
 
             <div className="overflow-y-auto flex-1">
-              <form onSubmit={handleSubmit} onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
-                  e.preventDefault();
-                }
-              }}>
+              <form onSubmit={handleSubmit} className="p-6">
                 {activeTab === 'basic' && (
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
