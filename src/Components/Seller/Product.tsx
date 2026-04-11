@@ -1,4 +1,4 @@
-// SellerProductPage.tsx - Fixed
+// SellerProductPage.tsx - Fixed with Proper Validation
 import React, { useEffect, useState } from 'react';
 import { PlusCircle, X, Upload, Edit2, Search, ChevronLeft, ChevronRight, Trash2, Film, Image, Package, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { baseurl } from '../../Constant/Base';
@@ -118,6 +118,14 @@ interface FieldConfig {
   showSEO: boolean;
 }
 
+interface ValidationErrors {
+  name?: string;
+  priceINR?: string;
+  categoryId?: string;
+  subCategoryId?: string;
+  images?: string;
+}
+
 const getCategoryName = (name: string) => name.toLowerCase().trim();
 
 const getFieldConfig = (categoryName: string, subCategoryName: string): FieldConfig => {
@@ -184,7 +192,7 @@ const defaultFormData: ProductFormData = {
   subCategoryId: '',
   priceINR: '',
   priceAED: '',
-  stock: '',
+  stock: '0',
   lowStockThreshold: '10',
   shortDescription: '',
   specifications: [],
@@ -242,6 +250,9 @@ const SellerProductPage = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+
   const [fieldConfig, setFieldConfig] = useState<FieldConfig>({
     showColors: true,
     showSizes: true,
@@ -260,6 +271,65 @@ const SellerProductPage = () => {
   const token = useGetToken('sellerToken');
   const sellerId = ExtractToken(token);
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
+
+  const validateForm = (): ValidationErrors => {
+    const errors: ValidationErrors = {};
+
+    if (!formData.name.trim()) {
+      errors.name = 'Product name is required';
+    }
+
+    if (!formData.priceINR || parseFloat(formData.priceINR) <= 0) {
+      errors.priceINR = 'Valid price (INR) is required';
+    }
+
+    if (!formData.categoryId) {
+      errors.categoryId = 'Please select a category';
+    }
+
+    if (!formData.subCategoryId) {
+      errors.subCategoryId = 'Please select a sub-category';
+    }
+
+    const hasImage = formData.mediaFiles.some((media, idx) => {
+      if (media.file && media.type === 'image') return true;
+      if (formData.existingImages[idx] && formData.existingImages[idx] !== '') return true;
+      return false;
+    });
+
+    if (!hasImage) {
+      errors.images = 'At least one product image is required';
+    }
+
+    return errors;
+  };
+
+  const validateTab = (tabId: string): boolean => {
+    const errors = validateForm();
+    setValidationErrors(errors);
+    
+    if (tabId === 'basic') {
+      const hasError = errors.name || errors.priceINR || errors.categoryId || errors.subCategoryId;
+      return !hasError;
+    }
+    
+    if (tabId === 'media') {
+      return !errors.images;
+    }
+    
+    return true;
+  };
+
+  const handleFieldTouch = (fieldName: string) => {
+    setTouchedFields(prev => new Set(prev).add(fieldName));
+  };
+
+  const getFieldError = (fieldName: keyof ValidationErrors): string | undefined => {
+    if (touchedFields.has(fieldName) && validationErrors[fieldName]) {
+      return validationErrors[fieldName];
+    }
+    return undefined;
+  };
 
   const updateFieldConfig = (categoryId: string, subCategoryId: string) => {
     const selectedCategory = categories.find((c) => c._id === categoryId);
@@ -344,12 +414,14 @@ const SellerProductPage = () => {
     setFilteredSubCategories(filtered);
     setFormData((prev) => ({ ...prev, categoryId, subCategoryId: '' }));
     updateFieldConfig(categoryId, '');
+    handleFieldTouch('categoryId');
   };
 
   const handleSubCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const subCategoryId = e.target.value;
     setFormData((prev) => ({ ...prev, subCategoryId }));
     updateFieldConfig(formData.categoryId, subCategoryId);
+    handleFieldTouch('subCategoryId');
   };
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>, index: number, mediaType: 'image' | 'video') => {
@@ -370,6 +442,7 @@ const SellerProductPage = () => {
     const newPreviews = [...mediaPreviews];
     newPreviews[index] = previewUrl;
     setMediaPreviews(newPreviews);
+    handleFieldTouch('images');
   };
 
   const removeMedia = (index: number) => {
@@ -389,6 +462,7 @@ const SellerProductPage = () => {
     const newPreviews = [...mediaPreviews];
     newPreviews[index] = '';
     setMediaPreviews(newPreviews);
+    handleFieldTouch('images');
   };
 
   const toggleMediaType = (index: number) => {
@@ -483,29 +557,78 @@ const SellerProductPage = () => {
     );
     setFilteredSubCategories(filtered);
     updateFieldConfig(product.categoryId._id, product.subCategoryId._id);
+    setValidationErrors({});
+    setTouchedFields(new Set());
     setIsModalOpen(true);
+  };
+
+  const handleNextTab = () => {
+    const currentIsValid = validateTab(activeTab);
+    
+    if (!currentIsValid) {
+      const missingFields: string[] = [];
+      const errors = validateForm();
+      if (errors.name) missingFields.push('Product Name');
+      if (errors.priceINR) missingFields.push('Price (INR)');
+      if (errors.categoryId) missingFields.push('Category');
+      if (errors.subCategoryId) missingFields.push('Sub-Category');
+      if (errors.images && activeTab === 'media') missingFields.push('Product Image');
+      
+      if (missingFields.length > 0) {
+        toast.error(`Please fill required fields: ${missingFields.join(', ')}`);
+      } else if (errors.images) {
+        toast.error('Please add at least one product image');
+      }
+      return;
+    }
+    
+    const nextTab = getNextTab();
+    if (nextTab) {
+      setActiveTab(nextTab);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!seller.status) {
       toast.error('Your account is pending approval. Please contact admin for more information.');
       return;
     }
+    
+    const errors = validateForm();
+    setValidationErrors(errors);
+    
+    const allFieldsTouched = new Set(['name', 'priceINR', 'categoryId', 'subCategoryId', 'images']);
+    setTouchedFields(allFieldsTouched);
+    
+    if (Object.keys(errors).length > 0) {
+      const errorMessages: string[] = [];
+      if (errors.name) errorMessages.push('Product Name');
+      if (errors.priceINR) errorMessages.push('Price (INR)');
+      if (errors.categoryId) errorMessages.push('Category');
+      if (errors.subCategoryId) errorMessages.push('Sub-Category');
+      if (errors.images) errorMessages.push('Product Image');
+      
+      toast.error(`Please fill required fields: ${errorMessages.join(', ')}`);
+      setActiveTab('basic');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const fd = new FormData();
       fd.append('name', formData.name);
-      fd.append('brand', formData.brand);
-      fd.append('sku', formData.sku);
+      fd.append('brand', formData.brand || '');
+      fd.append('sku', formData.sku || '');
       fd.append('categoryId', formData.categoryId);
       fd.append('subCategoryId', formData.subCategoryId);
       fd.append('priceINR', formData.priceINR);
-      fd.append('priceAED', formData.priceAED);
-      fd.append('stock', formData.stock);
+      fd.append('priceAED', formData.priceAED || '0');
+      fd.append('stock', formData.stock || '0');
       fd.append('lowStockThreshold', formData.lowStockThreshold);
-      fd.append('shortDescription', formData.shortDescription);
-      fd.append('description', formData.description);
+      fd.append('shortDescription', formData.shortDescription || '');
+      fd.append('description', formData.description || '');
       fd.append('isTrending', formData.isTrending.toString());
       fd.append('isFeatured', formData.isFeatured.toString());
       fd.append('specifications', JSON.stringify(specifications));
@@ -537,8 +660,9 @@ const SellerProductPage = () => {
       await getProducts();
       handleCloseModal();
       toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
-    } catch {
-      toast.error('Failed to save product');
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Failed to save product';
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -552,6 +676,8 @@ const SellerProductPage = () => {
     setFormData(defaultFormData);
     setMediaPreviews(['', '', '', '']);
     setFilteredSubCategories([]);
+    setValidationErrors({});
+    setTouchedFields(new Set());
     setFieldConfig({ showColors: true, showSizes: true, showMaterial: true, showWeight: true, showDimensions: true, showWarranty: true, showSpecifications: true, showDiscount: true, showShipping: true, showSEO: true });
   };
 
@@ -601,10 +727,10 @@ const SellerProductPage = () => {
   const hasSpecificationsTab = fieldConfig.showSpecifications || fieldConfig.showColors || fieldConfig.showSizes || fieldConfig.showMaterial || fieldConfig.showWeight || fieldConfig.showDimensions || fieldConfig.showWarranty;
 
   const tabs = [
-    { id: 'basic', label: 'Basic Info' },
-    ...(hasSpecificationsTab ? [{ id: 'specifications', label: 'Specifications' }] : []),
-    { id: 'media', label: 'Media' },
-    ...(fieldConfig.showDiscount || fieldConfig.showShipping || fieldConfig.showSEO ? [{ id: 'seo', label: 'SEO & Shipping' }] : []),
+    { id: 'basic', label: 'Basic Info', required: true },
+    ...(hasSpecificationsTab ? [{ id: 'specifications', label: 'Specifications', required: false }] : []),
+    { id: 'media', label: 'Media', required: true },
+    ...(fieldConfig.showDiscount || fieldConfig.showShipping || fieldConfig.showSEO ? [{ id: 'seo', label: 'SEO & Shipping', required: false }] : []),
   ];
 
   const getNextTab = () => {
@@ -626,6 +752,7 @@ const SellerProductPage = () => {
 
   const inputClass = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
   const labelClass = 'block text-sm font-medium text-gray-700 mb-2';
+  const errorClass = 'text-red-500 text-xs mt-1';
 
   return (
     <SellerLayout title="Manage Products" subtitle={`Welcome back, ${seller.name}!`}>
@@ -749,7 +876,7 @@ const SellerProductPage = () => {
                  </tr>
               )}
             </tbody>
-           </table>
+          </table>
         </div>
 
         {deleteModalOpen && (
@@ -827,7 +954,7 @@ const SellerProductPage = () => {
               {tabs.map((tab) => (
                 <button 
                   key={tab.id} 
-                  className={`px-5 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
+                  className={`px-5 py-3 font-medium text-sm whitespace-nowrap transition-colors relative ${
                     activeTab === tab.id 
                       ? 'text-blue-600 border-b-2 border-blue-600' 
                       : 'text-gray-500 hover:text-gray-700'
@@ -835,6 +962,9 @@ const SellerProductPage = () => {
                   onClick={() => setActiveTab(tab.id)}
                 >
                   {tab.label}
+                  {tab.required && validationErrors[tab.id === 'basic' ? 'name' : 'images'] && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
                 </button>
               ))}
             </div>
@@ -859,46 +989,88 @@ const SellerProductPage = () => {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className={labelClass}>Product Name</label>
-                        <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={inputClass} required />
+                        <label className={`${labelClass} ${validationErrors.name ? 'text-red-600' : ''}`}>
+                          Product Name <span className="text-red-500">*</span>
+                        </label>
+                        <input 
+                          type="text" 
+                          value={formData.name} 
+                          onChange={(e) => { setFormData({ ...formData, name: e.target.value }); handleFieldTouch('name'); }} 
+                          onBlur={() => handleFieldTouch('name')}
+                          className={`${inputClass} ${validationErrors.name ? 'border-red-500 focus:ring-red-500' : ''}`} 
+                          required 
+                        />
+                        {getFieldError('name') && <p className={errorClass}>{getFieldError('name')}</p>}
                       </div>
                       <div>
                         <label className={labelClass}>Brand</label>
-                        <input type="text" value={formData.brand} onChange={(e) => setFormData({ ...formData, brand: e.target.value })} className={inputClass} required />
+                        <input type="text" value={formData.brand} onChange={(e) => setFormData({ ...formData, brand: e.target.value })} className={inputClass} />
                       </div>
                       <div>
                         <label className={labelClass}>SKU</label>
-                        <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className={inputClass} required />
+                        <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className={inputClass} />
+                        <p className="text-xs text-gray-400 mt-1">Auto-generated if left blank</p>
                       </div>
                       <div>
                         <label className={labelClass}>Stock Quantity</label>
-                        <input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} className={inputClass} required min="0" />
+                        <input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} className={inputClass} min="0" />
                       </div>
                       <div>
                         <label className={labelClass}>Low Stock Alert</label>
                         <input type="number" value={formData.lowStockThreshold} onChange={(e) => setFormData({ ...formData, lowStockThreshold: e.target.value })} className={inputClass} min="0" />
                       </div>
                       <div>
-                        <label className={labelClass}>Category</label>
-                        <select value={formData.categoryId} onChange={handleCategoryChange} className={inputClass} required>
+                        <label className={`${labelClass} ${validationErrors.categoryId ? 'text-red-600' : ''}`}>
+                          Category <span className="text-red-500">*</span>
+                        </label>
+                        <select 
+                          value={formData.categoryId} 
+                          onChange={handleCategoryChange} 
+                          onBlur={() => handleFieldTouch('categoryId')}
+                          className={`${inputClass} ${validationErrors.categoryId ? 'border-red-500 focus:ring-red-500' : ''}`} 
+                          required
+                        >
                           <option value="">Select Category</option>
                           {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
                         </select>
+                        {getFieldError('categoryId') && <p className={errorClass}>{getFieldError('categoryId')}</p>}
                       </div>
                       <div>
-                        <label className={labelClass}>Sub Category</label>
-                        <select value={formData.subCategoryId} onChange={handleSubCategoryChange} className={inputClass} required disabled={!formData.categoryId}>
+                        <label className={`${labelClass} ${validationErrors.subCategoryId ? 'text-red-600' : ''}`}>
+                          Sub Category <span className="text-red-500">*</span>
+                        </label>
+                        <select 
+                          value={formData.subCategoryId} 
+                          onChange={handleSubCategoryChange} 
+                          onBlur={() => handleFieldTouch('subCategoryId')}
+                          className={`${inputClass} ${validationErrors.subCategoryId ? 'border-red-500 focus:ring-red-500' : ''}`} 
+                          required 
+                          disabled={!formData.categoryId}
+                        >
                           <option value="">Select Sub Category</option>
                           {filteredSubCategories.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
                         </select>
+                        {getFieldError('subCategoryId') && <p className={errorClass}>{getFieldError('subCategoryId')}</p>}
                       </div>
                       <div>
-                        <label className={labelClass}>Price (INR)</label>
-                        <input type="number" value={formData.priceINR} onChange={(e) => setFormData({ ...formData, priceINR: e.target.value })} className={inputClass} required min="0" />
+                        <label className={`${labelClass} ${validationErrors.priceINR ? 'text-red-600' : ''}`}>
+                          Price (INR) <span className="text-red-500">*</span>
+                        </label>
+                        <input 
+                          type="number" 
+                          value={formData.priceINR} 
+                          onChange={(e) => { setFormData({ ...formData, priceINR: e.target.value }); handleFieldTouch('priceINR'); }} 
+                          onBlur={() => handleFieldTouch('priceINR')}
+                          className={`${inputClass} ${validationErrors.priceINR ? 'border-red-500 focus:ring-red-500' : ''}`} 
+                          required 
+                          min="0" 
+                          step="0.01"
+                        />
+                        {getFieldError('priceINR') && <p className={errorClass}>{getFieldError('priceINR')}</p>}
                       </div>
                       <div>
                         <label className={labelClass}>Price (AED)</label>
-                        <input type="number" value={formData.priceAED} onChange={(e) => setFormData({ ...formData, priceAED: e.target.value })} className={inputClass} required min="0" />
+                        <input type="number" value={formData.priceAED} onChange={(e) => setFormData({ ...formData, priceAED: e.target.value })} className={inputClass} min="0" step="0.01" />
                       </div>
                     </div>
                     <div>
@@ -1018,7 +1190,17 @@ const SellerProductPage = () => {
 
                 {activeTab === 'media' && (
                   <div className="space-y-5">
-                    <label className={labelClass}>Product Media</label>
+                    <label className={`${labelClass} ${validationErrors.images ? 'text-red-600' : ''}`}>
+                      Product Media <span className="text-red-500">*</span> (At least one image required)
+                    </label>
+                    {validationErrors.images && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                        <p className="text-red-600 text-sm flex items-center gap-2">
+                          <AlertCircle size={16} />
+                          {validationErrors.images}
+                        </p>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {[0, 1, 2, 3].map((index) => (
                         <div key={index} className="relative group">
@@ -1042,8 +1224,8 @@ const SellerProductPage = () => {
                               </div>
                             </div>
                           ) : (
-                            <div className="border-2 border-gray-200 border-dashed rounded-lg p-6 text-center hover:border-blue-300 transition-colors">
-                              <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                            <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${validationErrors.images ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-blue-300'}`}>
+                              <Upload className={`mx-auto h-8 w-8 ${validationErrors.images ? 'text-red-400' : 'text-gray-400'}`} />
                               <div className="mt-2">
                                 <label className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-500">
                                   <span>Upload {formData.mediaFiles[index].type === 'image' ? 'Image' : 'Video'} {index + 1}</span>
@@ -1059,6 +1241,10 @@ const SellerProductPage = () => {
                         </div>
                       ))}
                     </div>
+                    <p className="text-sm text-gray-500 text-center mt-2">
+                      {validationErrors.images ? '⚠️ ' : '💡 '}
+                      At least one image is required. You can upload up to 4 images.
+                    </p>
                   </div>
                 )}
 
@@ -1124,7 +1310,7 @@ const SellerProductPage = () => {
                     </button>
                     <div className="flex gap-3">
                       {getNextTab() ? (
-                        <button type="button" onClick={() => setActiveTab(getNextTab()!)} className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
+                        <button type="button" onClick={handleNextTab} className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
                           Next
                         </button>
                       ) : (
