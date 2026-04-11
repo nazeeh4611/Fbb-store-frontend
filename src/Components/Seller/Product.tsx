@@ -615,7 +615,7 @@ const SellerProductPage = () => {
     return true;
   };
 
-  const handleNextTab = () => {
+  const handleNextTab = () =>  {
     const touchMap: Record<string, string[]> = {
       basic: ['name', 'priceINR', 'categoryId', 'subCategoryId'],
       media: ['images'],
