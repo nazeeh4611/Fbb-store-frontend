@@ -1,4 +1,3 @@
-// SellerProductPage.tsx - Fixed with Proper Validation
 import React, { useEffect, useState } from 'react';
 import { PlusCircle, X, Upload, Edit2, Search, ChevronLeft, ChevronRight, Trash2, Film, Image, Package, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { baseurl } from '../../Constant/Base';
@@ -304,20 +303,12 @@ const SellerProductPage = () => {
     return errors;
   };
 
-  const validateTab = (tabId: string): boolean => {
-    const errors = validateForm();
-    setValidationErrors(errors);
-    
-    if (tabId === 'basic') {
-      const hasError = errors.name || errors.priceINR || errors.categoryId || errors.subCategoryId;
-      return !hasError;
-    }
-    
-    if (tabId === 'media') {
-      return !errors.images;
-    }
-    
-    return true;
+  const clearFieldError = (fieldName: keyof ValidationErrors) => {
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldName];
+      return newErrors;
+    });
   };
 
   const handleFieldTouch = (fieldName: string) => {
@@ -415,6 +406,9 @@ const SellerProductPage = () => {
     setFormData((prev) => ({ ...prev, categoryId, subCategoryId: '' }));
     updateFieldConfig(categoryId, '');
     handleFieldTouch('categoryId');
+    if (categoryId) {
+      clearFieldError('categoryId');
+    }
   };
 
   const handleSubCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -422,6 +416,9 @@ const SellerProductPage = () => {
     setFormData((prev) => ({ ...prev, subCategoryId }));
     updateFieldConfig(formData.categoryId, subCategoryId);
     handleFieldTouch('subCategoryId');
+    if (subCategoryId) {
+      clearFieldError('subCategoryId');
+    }
   };
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>, index: number, mediaType: 'image' | 'video') => {
@@ -443,6 +440,16 @@ const SellerProductPage = () => {
     newPreviews[index] = previewUrl;
     setMediaPreviews(newPreviews);
     handleFieldTouch('images');
+
+    const hasImage = newMediaFiles.some((media, idx) => {
+      if (media.file && media.type === 'image') return true;
+      if (formData.existingImages[idx] && formData.existingImages[idx] !== '') return true;
+      return false;
+    });
+
+    if (hasImage) {
+      clearFieldError('images');
+    }
   };
 
   const removeMedia = (index: number) => {
@@ -463,6 +470,21 @@ const SellerProductPage = () => {
     newPreviews[index] = '';
     setMediaPreviews(newPreviews);
     handleFieldTouch('images');
+
+    const hasImage = newMediaFiles.some((media, idx) => {
+      if (media.file && media.type === 'image') return true;
+      if (formData.existingImages[idx] && formData.existingImages[idx] !== '') return true;
+      return false;
+    });
+
+    if (!hasImage) {
+      const errors = validateForm();
+      if (errors.images) {
+        setValidationErrors(prev => ({ ...prev, images: errors.images }));
+      }
+    } else {
+      clearFieldError('images');
+    }
   };
 
   const toggleMediaType = (index: number) => {
@@ -564,7 +586,7 @@ const SellerProductPage = () => {
 
   const handleNextTab = () => {
     const currentIsValid = validateTab(activeTab);
-    
+
     if (!currentIsValid) {
       const missingFields: string[] = [];
       const errors = validateForm();
@@ -573,7 +595,7 @@ const SellerProductPage = () => {
       if (errors.categoryId) missingFields.push('Category');
       if (errors.subCategoryId) missingFields.push('Sub-Category');
       if (errors.images && activeTab === 'media') missingFields.push('Product Image');
-      
+
       if (missingFields.length > 0) {
         toast.error(`Please fill required fields: ${missingFields.join(', ')}`);
       } else if (errors.images) {
@@ -581,27 +603,43 @@ const SellerProductPage = () => {
       }
       return;
     }
-    
+
     const nextTab = getNextTab();
     if (nextTab) {
       setActiveTab(nextTab);
     }
   };
 
+  const validateTab = (tabId: string): boolean => {
+    const errors = validateForm();
+    setValidationErrors(errors);
+
+    if (tabId === 'basic') {
+      const hasError = errors.name || errors.priceINR || errors.categoryId || errors.subCategoryId;
+      return !hasError;
+    }
+
+    if (tabId === 'media') {
+      return !errors.images;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!seller.status) {
       toast.error('Your account is pending approval. Please contact admin for more information.');
       return;
     }
-    
+
     const errors = validateForm();
     setValidationErrors(errors);
-    
+
     const allFieldsTouched = new Set(['name', 'priceINR', 'categoryId', 'subCategoryId', 'images']);
     setTouchedFields(allFieldsTouched);
-    
+
     if (Object.keys(errors).length > 0) {
       const errorMessages: string[] = [];
       if (errors.name) errorMessages.push('Product Name');
@@ -609,12 +647,12 @@ const SellerProductPage = () => {
       if (errors.categoryId) errorMessages.push('Category');
       if (errors.subCategoryId) errorMessages.push('Sub-Category');
       if (errors.images) errorMessages.push('Product Image');
-      
+
       toast.error(`Please fill required fields: ${errorMessages.join(', ')}`);
       setActiveTab('basic');
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const fd = new FormData();
@@ -743,6 +781,11 @@ const SellerProductPage = () => {
     return idx > 0 ? tabs[idx - 1].id : null;
   };
 
+  const isLastTab = () => {
+    const idx = tabs.findIndex((t) => t.id === activeTab);
+    return idx === tabs.length - 1;
+  };
+
   useEffect(() => {
     getSeller();
     getProducts();
@@ -775,18 +818,18 @@ const SellerProductPage = () => {
           <h2 className="text-xl font-semibold text-gray-800">Products</h2>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <div className="relative flex-grow sm:max-w-md">
-              <input 
-                type="text" 
-                placeholder="Search products..." 
-                value={searchTerm} 
-                onChange={(e) => setSearchTerm(e.target.value)} 
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" 
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               />
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
             </div>
-            <button 
-              onClick={handleAddNewClick} 
-              disabled={!seller.status} 
+            <button
+              onClick={handleAddNewClick}
+              disabled={!seller.status}
               className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${seller.status ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
             >
               <PlusCircle size={18} />
@@ -830,11 +873,11 @@ const SellerProductPage = () => {
                       <p className="text-sm font-medium text-gray-800">₹{product.priceINR}</p>
                       <p className="text-xs text-gray-500">AED {product.priceAED}</p>
                     </div>
-                   </td>
+                  </td>
                   <td className="py-3 px-4">
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      product.stock <= 0 ? 'bg-red-100 text-red-700' : 
-                      product.stock <= product.lowStockThreshold ? 'bg-amber-100 text-amber-700' : 
+                      product.stock <= 0 ? 'bg-red-100 text-red-700' :
+                      product.stock <= product.lowStockThreshold ? 'bg-amber-100 text-amber-700' :
                       'bg-green-100 text-green-700'
                     }`}>
                       {product.stock <= 0 ? (
@@ -845,35 +888,35 @@ const SellerProductPage = () => {
                         <><CheckCircle size={10} className="mr-1" /> {product.stock} units</>
                       )}
                     </span>
-                   </td>
+                  </td>
                   <td className="py-3 px-4 text-gray-500 text-xs font-mono">{product.sku}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <button 
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
+                      <button
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         onClick={() => handleEdit(product)}
                         disabled={!seller.status}
                       >
-                        <Edit2 size="16" />
+                        <Edit2 size={16} />
                       </button>
-                      <button 
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
+                      <button
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         onClick={() => handleDeleteClick(product._id)}
                         disabled={!seller.status}
                       >
-                        <Trash2 size="16" />
+                        <Trash2 size={16} />
                       </button>
                     </div>
-                   </td>
-                 </tr>
+                  </td>
+                </tr>
               )) : (
                 <tr>
                   <td colSpan={6} className="py-12 px-4 text-center text-gray-400">
                     <Package size={40} className="mx-auto mb-3 opacity-50" />
                     <p>No products found</p>
                     <button onClick={handleAddNewClick} className="mt-3 text-blue-500 text-sm font-medium">Add your first product →</button>
-                   </td>
-                 </tr>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -885,14 +928,14 @@ const SellerProductPage = () => {
               <h3 className="text-xl font-semibold text-gray-800 mb-2">Confirm Delete</h3>
               <p className="text-gray-500 mb-6">Are you sure you want to delete this product? This action cannot be undone.</p>
               <div className="flex justify-end gap-3">
-                <button 
-                  onClick={() => { setDeleteModalOpen(false); setProductToDelete(null); }} 
+                <button
+                  onClick={() => { setDeleteModalOpen(false); setProductToDelete(null); }}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={handleDelete} 
+                <button
+                  onClick={handleDelete}
                   className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                 >
                   Delete Product
@@ -908,21 +951,21 @@ const SellerProductPage = () => {
               Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, sortedProducts.length)} of {sortedProducts.length}
             </div>
             <div className="flex items-center gap-1">
-              <button 
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} 
-                disabled={currentPage === 1} 
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
                 className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                <ChevronLeft size="16" />
+                <ChevronLeft size={16} />
               </button>
               <div className="flex gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((n) => (
-                  <button 
-                    key={n} 
-                    onClick={() => setCurrentPage(n)} 
+                  <button
+                    key={n}
+                    onClick={() => setCurrentPage(n)}
                     className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                      currentPage === n 
-                        ? 'bg-blue-500 text-white' 
+                      currentPage === n
+                        ? 'bg-blue-500 text-white'
                         : 'border border-gray-200 hover:bg-gray-50'
                     }`}
                   >
@@ -930,12 +973,12 @@ const SellerProductPage = () => {
                   </button>
                 ))}
               </div>
-              <button 
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} 
-                disabled={currentPage === totalPages} 
+              <button
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
                 className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                <ChevronRight size="16" />
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>
@@ -947,18 +990,18 @@ const SellerProductPage = () => {
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-xl">
             <div className="flex justify-between items-center p-5 border-b border-gray-100">
               <h3 className="text-xl font-semibold text-gray-800">{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 transition-colors"><X size="22" /></button>
+              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={22} /></button>
             </div>
 
             <div className="flex border-b border-gray-100 overflow-x-auto px-2">
               {tabs.map((tab) => (
-                <button 
-                  key={tab.id} 
+                <button
+                  key={tab.id}
                   className={`px-5 py-3 font-medium text-sm whitespace-nowrap transition-colors relative ${
-                    activeTab === tab.id 
-                      ? 'text-blue-600 border-b-2 border-blue-600' 
+                    activeTab === tab.id
+                      ? 'text-blue-600 border-b-2 border-blue-600'
                       : 'text-gray-500 hover:text-gray-700'
-                  }`} 
+                  }`}
                   onClick={() => setActiveTab(tab.id)}
                 >
                   {tab.label}
@@ -992,13 +1035,19 @@ const SellerProductPage = () => {
                         <label className={`${labelClass} ${validationErrors.name ? 'text-red-600' : ''}`}>
                           Product Name <span className="text-red-500">*</span>
                         </label>
-                        <input 
-                          type="text" 
-                          value={formData.name} 
-                          onChange={(e) => { setFormData({ ...formData, name: e.target.value }); handleFieldTouch('name'); }} 
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) => {
+                            setFormData({ ...formData, name: e.target.value });
+                            handleFieldTouch('name');
+                            if (e.target.value.trim()) {
+                              clearFieldError('name');
+                            }
+                          }}
                           onBlur={() => handleFieldTouch('name')}
-                          className={`${inputClass} ${validationErrors.name ? 'border-red-500 focus:ring-red-500' : ''}`} 
-                          required 
+                          className={`${inputClass} ${validationErrors.name ? 'border-red-500 focus:ring-red-500' : ''}`}
+                          required
                         />
                         {getFieldError('name') && <p className={errorClass}>{getFieldError('name')}</p>}
                       </div>
@@ -1023,11 +1072,11 @@ const SellerProductPage = () => {
                         <label className={`${labelClass} ${validationErrors.categoryId ? 'text-red-600' : ''}`}>
                           Category <span className="text-red-500">*</span>
                         </label>
-                        <select 
-                          value={formData.categoryId} 
-                          onChange={handleCategoryChange} 
+                        <select
+                          value={formData.categoryId}
+                          onChange={handleCategoryChange}
                           onBlur={() => handleFieldTouch('categoryId')}
-                          className={`${inputClass} ${validationErrors.categoryId ? 'border-red-500 focus:ring-red-500' : ''}`} 
+                          className={`${inputClass} ${validationErrors.categoryId ? 'border-red-500 focus:ring-red-500' : ''}`}
                           required
                         >
                           <option value="">Select Category</option>
@@ -1039,12 +1088,12 @@ const SellerProductPage = () => {
                         <label className={`${labelClass} ${validationErrors.subCategoryId ? 'text-red-600' : ''}`}>
                           Sub Category <span className="text-red-500">*</span>
                         </label>
-                        <select 
-                          value={formData.subCategoryId} 
-                          onChange={handleSubCategoryChange} 
+                        <select
+                          value={formData.subCategoryId}
+                          onChange={handleSubCategoryChange}
                           onBlur={() => handleFieldTouch('subCategoryId')}
-                          className={`${inputClass} ${validationErrors.subCategoryId ? 'border-red-500 focus:ring-red-500' : ''}`} 
-                          required 
+                          className={`${inputClass} ${validationErrors.subCategoryId ? 'border-red-500 focus:ring-red-500' : ''}`}
+                          required
                           disabled={!formData.categoryId}
                         >
                           <option value="">Select Sub Category</option>
@@ -1056,14 +1105,20 @@ const SellerProductPage = () => {
                         <label className={`${labelClass} ${validationErrors.priceINR ? 'text-red-600' : ''}`}>
                           Price (INR) <span className="text-red-500">*</span>
                         </label>
-                        <input 
-                          type="number" 
-                          value={formData.priceINR} 
-                          onChange={(e) => { setFormData({ ...formData, priceINR: e.target.value }); handleFieldTouch('priceINR'); }} 
+                        <input
+                          type="number"
+                          value={formData.priceINR}
+                          onChange={(e) => {
+                            setFormData({ ...formData, priceINR: e.target.value });
+                            handleFieldTouch('priceINR');
+                            if (e.target.value && parseFloat(e.target.value) > 0) {
+                              clearFieldError('priceINR');
+                            }
+                          }}
                           onBlur={() => handleFieldTouch('priceINR')}
-                          className={`${inputClass} ${validationErrors.priceINR ? 'border-red-500 focus:ring-red-500' : ''}`} 
-                          required 
-                          min="0" 
+                          className={`${inputClass} ${validationErrors.priceINR ? 'border-red-500 focus:ring-red-500' : ''}`}
+                          required
+                          min="0"
                           step="0.01"
                         />
                         {getFieldError('priceINR') && <p className={errorClass}>{getFieldError('priceINR')}</p>}
@@ -1127,7 +1182,7 @@ const SellerProductPage = () => {
                             <div key={index} className="flex flex-col sm:flex-row gap-2">
                               <input type="text" value={spec.key} onChange={(e) => updateSpecification(index, 'key', e.target.value)} placeholder="Key (e.g., Processor)" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                               <input type="text" value={spec.value} onChange={(e) => updateSpecification(index, 'value', e.target.value)} placeholder="Value (e.g., Intel i7)" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                              <button type="button" onClick={() => removeSpecification(index)} className="px-3 py-2 text-red-600 hover:text-red-800"><X size="18" /></button>
+                              <button type="button" onClick={() => removeSpecification(index)} className="px-3 py-2 text-red-600 hover:text-red-800"><X size={18} /></button>
                             </div>
                           ))}
                           {specifications.length === 0 && (
@@ -1210,16 +1265,16 @@ const SellerProductPage = () => {
                                 <img src={mediaPreviews[index] || formData.existingImages[index]} alt={`Preview ${index + 1}`} className="h-full w-full object-cover" />
                               ) : (
                                 <div className="h-full w-full flex flex-col items-center justify-center bg-gray-100">
-                                  <Film size="32" className="text-gray-400" />
+                                  <Film size={32} className="text-gray-400" />
                                   <span className="text-xs text-gray-500 mt-2">Video File</span>
                                 </div>
                               )}
                               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button type="button" onClick={() => toggleMediaType(index)} className="bg-white rounded-full p-1.5 shadow-sm hover:bg-gray-100">
-                                  {formData.mediaFiles[index].type === 'image' ? <Film size="14" /> : <Image size="14" />}
+                                  {formData.mediaFiles[index].type === 'image' ? <Film size={14} /> : <Image size={14} />}
                                 </button>
                                 <button type="button" onClick={() => removeMedia(index)} className="bg-white rounded-full p-1.5 shadow-sm hover:bg-red-50 hover:text-red-600">
-                                  <X size="14" />
+                                  <X size={14} />
                                 </button>
                               </div>
                             </div>
@@ -1309,13 +1364,13 @@ const SellerProductPage = () => {
                       {getPrevTab() ? 'Back' : 'Cancel'}
                     </button>
                     <div className="flex gap-3">
-                      {getNextTab() ? (
+                      {!isLastTab() ? (
                         <button type="button" onClick={handleNextTab} className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
                           Next
                         </button>
                       ) : (
-                        <button type="submit" disabled={isLoading} className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-60 font-medium">
-                          {isLoading ? (editingProduct ? 'Updating...' : 'Creating...') : (editingProduct ? 'Update Product' : 'Create Product')}
+                        <button type="submit" disabled={isLoading} className="px-5 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-60 font-medium">
+                          {isLoading ? (editingProduct ? 'Saving...' : 'Creating...') : (editingProduct ? 'Update Product' : 'Save Product')}
                         </button>
                       )}
                     </div>
