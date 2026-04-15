@@ -104,6 +104,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   const [user, setUser] = useState<UserData | null>(null);
   const [isLogged, setIsLogged] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [updatingCartItem, setUpdatingCartItem] = useState<string | null>(null);
 
   const cartRef = useRef<HTMLDivElement>(null);
   const wishlistRef = useRef<HTMLDivElement>(null);
@@ -134,7 +135,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   }, []);
 
   useEffect(() => {
-    const handleCartUpdate = (e: Event) => {
+    const handleCartUpdate = async (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail) {
         const { cartCount: newCount, cartTotal: newTotal, cart: newCart } = customEvent.detail;
@@ -142,7 +143,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
         if (newTotal !== undefined) setCartTotal(newTotal);
         if (newCart !== undefined) setCartItems(newCart);
       } else {
-        fetchCartData(false);
+        await fetchCartData(false);
       }
     };
     const handleWishlistUpdate = () => {
@@ -286,44 +287,52 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   };
 
   const removeFromCart = async (cartItemId: string) => {
+    setUpdatingCartItem(cartItemId);
+    
+    const removedItem = cartItems.find(item => item._id === cartItemId);
+    const itemQuantity = removedItem?.quantity || 1;
+    const itemPrice = removedItem?.price || 0;
+    
     setCartItems(prev => prev.filter(item => item._id !== cartItemId));
-    setCartCount(prev => {
-      const removedItem = cartItems.find(item => item._id === cartItemId);
-      return prev - (removedItem?.quantity || 1);
-    });
-    setCartTotal(prev => {
-      const removedItem = cartItems.find(item => item._id === cartItemId);
-      return prev - ((removedItem?.price || 0) * (removedItem?.quantity || 1));
-    });
+    setCartCount(prev => prev - itemQuantity);
+    setCartTotal(prev => prev - (itemPrice * itemQuantity));
 
     try {
       const token = localStorage.getItem('token');
       await api.delete(`/cart/cart/remove/${cartItemId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      fetchCartData(false);
+      await fetchCartData(false);
     } catch (error) {
       console.error('Error removing from cart:', error);
-      fetchCartData(false);
+      await fetchCartData(false);
+    } finally {
+      setUpdatingCartItem(null);
     }
   };
 
   const updateCartQuantity = async (cartItemId: string, newQuantity: number) => {
+    setUpdatingCartItem(cartItemId);
+    
+    const currentItem = cartItems.find(item => item._id === cartItemId);
+    if (!currentItem) return;
+    
+    const oldQuantity = currentItem.quantity;
+    const diff = newQuantity - oldQuantity;
+    
     setCartItems(prev =>
       prev.map(item => item._id === cartItemId ? { ...item, quantity: newQuantity } : item)
     );
-    const updatedItem = cartItems.find(item => item._id === cartItemId);
-    if (updatedItem) {
-      const diff = newQuantity - updatedItem.quantity;
-      setCartCount(prev => prev + diff);
-      setCartTotal(prev => prev + diff * updatedItem.price);
-    }
+    setCartCount(prev => prev + diff);
+    setCartTotal(prev => prev + diff * currentItem.price);
 
     try {
       const token = localStorage.getItem('token');
       await api.put('/cart/cart/update', { cartItemId, quantity: newQuantity }, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      fetchCartData(false);
+      await fetchCartData(false);
     } catch (error) {
       console.error('Error updating cart:', error);
-      fetchCartData(false);
+      await fetchCartData(false);
+    } finally {
+      setUpdatingCartItem(null);
     }
   };
 
@@ -333,10 +342,10 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
     try {
       const token = localStorage.getItem('token');
       await api.delete(`/cart/wishlist/remove/${productId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      fetchWishlistData(false);
+      await fetchWishlistData(false);
     } catch (error) {
       console.error('Error removing from wishlist:', error);
-      fetchWishlistData(false);
+      await fetchWishlistData(false);
     }
   };
 
@@ -344,8 +353,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
     try {
       const token = localStorage.getItem('token');
       await api.post('/cart/wishlist/move-to-cart', { productId }, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      fetchCartData(false);
-      fetchWishlistData(false);
+      await Promise.all([fetchCartData(false), fetchWishlistData(false)]);
     } catch (error) {
       console.error('Error moving to cart:', error);
     }
@@ -367,15 +375,13 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
     setIsLogged(true);
     setUser(userData);
     setShowAuthModal(false);
-    fetchCartData(false);
-    fetchWishlistData(false);
+    await Promise.all([fetchCartData(false), fetchWishlistData(false)]);
   };
 
   const handleOtpVerifySuccess = async () => {
     await checkAuthStatus();
     setShowOtpModal(false);
-    fetchCartData(false);
-    fetchWishlistData(false);
+    await Promise.all([fetchCartData(false), fetchWishlistData(false)]);
   };
 
   const handleLogout = async () => {
@@ -392,6 +398,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
       setWishlistItems([]);
       setCartCount(0);
       setWishlistCount(0);
+      setCartTotal(0);
       setShowProfileDropdown(false);
       setIsOpen(false);
       navigate('/');
@@ -445,40 +452,63 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
             </div>
           ) : (
             <div className="space-y-4">
-              {cartItems.map((item) => (
-                <div key={item._id} className="flex items-start gap-3 pb-4 border-b border-gray-100">
-                  <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                    <img
-                      src={item.product.images.image1 || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200&h=200&fit=crop&auto=format&q=80'}
-                      alt={item.product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-gray-900 text-sm line-clamp-2">{item.product.name}</h4>
-                    <p className="text-xs text-gray-500 mt-0.5">{item.product.brand}</p>
-                    {item.selectedColor && <p className="text-xs text-gray-400">Color: {item.selectedColor}</p>}
-                    {item.selectedSize && <p className="text-xs text-gray-400">Size: {item.selectedSize}</p>}
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
-                        <button
-                          onClick={() => updateCartQuantity(item._id, Math.max(1, item.quantity - 1))}
-                          className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 text-gray-700 font-medium"
-                        >-</button>
-                        <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                        <button
-                          onClick={() => updateCartQuantity(item._id, item.quantity + 1)}
-                          className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 text-gray-700 font-medium"
-                        >+</button>
-                      </div>
-                      <span className="font-bold text-gray-900 text-sm">₹{(item.price * item.quantity).toLocaleString()}</span>
+              {cartItems.map((item) => {
+                const isUpdating = updatingCartItem === item._id;
+                return (
+                  <div key={item._id} className="flex items-start gap-3 pb-4 border-b border-gray-100">
+                    <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                      <img
+                        src={item.product.images.image1 || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200&h=200&fit=crop&auto=format&q=80'}
+                        alt={item.product.name}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 text-sm line-clamp-2">{item.product.name}</h4>
+                      <p className="text-xs text-gray-500 mt-0.5">{item.product.brand}</p>
+                      {item.selectedColor && <p className="text-xs text-gray-400">Color: {item.selectedColor}</p>}
+                      {item.selectedSize && <p className="text-xs text-gray-400">Size: {item.selectedSize}</p>}
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => updateCartQuantity(item._id, Math.max(1, item.quantity - 1))}
+                            disabled={isUpdating}
+                            className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 text-gray-700 font-medium disabled:opacity-50"
+                          >
+                            -
+                          </button>
+                          {isUpdating ? (
+                            <div className="w-8 h-7 flex items-center justify-center">
+                              <div className="w-3 h-3 border-2 border-gray-300 border-t-amber-500 rounded-full animate-spin" />
+                            </div>
+                          ) : (
+                            <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                          )}
+                          <button
+                            onClick={() => updateCartQuantity(item._id, item.quantity + 1)}
+                            disabled={isUpdating}
+                            className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 text-gray-700 font-medium disabled:opacity-50"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="font-bold text-gray-900 text-sm">₹{(item.price * item.quantity).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => removeFromCart(item._id)} 
+                      disabled={isUpdating}
+                      className="text-gray-300 hover:text-red-500 transition-colors mt-1 disabled:opacity-50"
+                    >
+                      {isUpdating ? (
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4" />
+                      )}
+                    </button>
                   </div>
-                  <button onClick={() => removeFromCart(item._id)} className="text-gray-300 hover:text-red-500 transition-colors mt-1">
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

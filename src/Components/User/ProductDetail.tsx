@@ -852,7 +852,7 @@ I'm interested in this product. Could you please provide more information?`)
       </AnimatePresence>
       
       <main className="flex-grow">
-        <div className="relative bg-black py-8">
+        {/* <div className="relative bg-black py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {statistics.map((stat, index) => (
@@ -874,7 +874,7 @@ I'm interested in this product. Could you please provide more information?`)
               ))}
             </div>
           </div>
-        </div>
+        </div> */}
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
           <motion.div
