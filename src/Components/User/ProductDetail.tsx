@@ -513,12 +513,12 @@ I'm interested in this product. Could you please provide more information?`)
     return discountedPrice;
   };
 
-  const statistics = [
-    { value: "150K+", label: "Happy Customers", icon: <Users className="w-4 h-4" /> },
-    { value: `${productData?.soldCount || 0}+`, label: "Sold", icon: <ShoppingBag className="w-4 h-4" /> },
-    { value: `${productData?.viewCount || 0}+`, label: "Views", icon: <Eye className="w-4 h-4" /> },
-    { value: "30 Day", label: "Returns", icon: <Package className="w-4 h-4" /> }
-  ];
+  // const statistics = [
+  //   { value: "150K+", label: "Happy Customers", icon: <Users className="w-4 h-4" /> },
+  //   { value: `${productData?.soldCount || 0}+`, label: "Sold", icon: <ShoppingBag className="w-4 h-4" /> },
+  //   { value: `${productData?.viewCount || 0}+`, label: "Views", icon: <Eye className="w-4 h-4" /> },
+  //   { value: "30 Day", label: "Returns", icon: <Package className="w-4 h-4" /> }
+  // ];
 
   const features = [
     {
