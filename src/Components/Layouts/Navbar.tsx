@@ -69,9 +69,9 @@ interface UserData {
   role?: string;
 }
 
-const NavBar: React.FC<NavBarProps> = ({ isTransparent = false }) => {
+const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [, setIsScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
