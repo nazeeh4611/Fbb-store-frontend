@@ -118,6 +118,21 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   }, []);
 
   useEffect(() => {
+    const handleCartUpdate = () => {
+      fetchCartData();
+    };
+    const handleWishlistUpdate = () => {
+      fetchWishlistData();
+    };
+    window.addEventListener('cart:updated', handleCartUpdate);
+    window.addEventListener('wishlist:updated', handleWishlistUpdate);
+    return () => {
+      window.removeEventListener('cart:updated', handleCartUpdate);
+      window.removeEventListener('wishlist:updated', handleWishlistUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
     if (cartOpen) fetchCartData();
   }, [cartOpen]);
 
@@ -324,9 +339,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
       className="fixed inset-0 z-[999] flex justify-end"
       onClick={() => setCartOpen(false)}
     >
-      <div
-        className="absolute inset-0 bg-black/50"
-      />
+      <div className="absolute inset-0 bg-black/50" />
       <div
         ref={cartRef}
         className="relative z-10 w-full max-w-sm bg-white h-full flex flex-col shadow-2xl overflow-hidden"

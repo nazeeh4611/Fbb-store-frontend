@@ -316,7 +316,6 @@ export default function ProductPage() {
       
       setMediaItems(mediaArray)
       
-      // Set default color and size if available
       if (response.data.product.colors?.length > 0) {
         setSelectedColor(response.data.product.colors[0])
       }
@@ -405,13 +404,11 @@ I'm interested in this product. Could you please provide more information?`)
       
       if (!productData) return;
   
-      // Validate stock
       if (quantity > productData.stock) {
         toast.error(`Only ${productData.stock} items available in stock`);
         return;
       }
   
-      // Validate variant selection if product has variants
       if (productData.colors && productData.colors.length > 0 && !selectedColor) {
         toast.error('Please select a color');
         return;
@@ -436,6 +433,7 @@ I'm interested in this product. Could you please provide more information?`)
   
       if (response.data.success) {
         toast.success('Product added to cart!');
+        window.dispatchEvent(new CustomEvent('cart:updated'));
       } else {
         toast.error(response.data.message || 'Failed to add to cart');
       }
@@ -450,6 +448,7 @@ I'm interested in this product. Could you please provide more information?`)
       setAddingToCart(false);
     }
   };
+
   const handleAddToWishlist = async () => {
     try {
       if (!productData) return;
@@ -461,6 +460,7 @@ I'm interested in this product. Could you please provide more information?`)
       if (response.data.success) {
         toast.success('Added to wishlist!');
         setIsWishlisted(true);
+        window.dispatchEvent(new CustomEvent('wishlist:updated'));
       }
     } catch (error) {
       console.error('Error adding to wishlist:', error);
@@ -470,11 +470,11 @@ I'm interested in this product. Could you please provide more information?`)
 
   const toggleWishlist = () => {
     if (isWishlisted) {
-      // Remove from wishlist
       api.delete(`/wishlist/remove/${productData?._id}`)
         .then(() => {
           setIsWishlisted(false);
           toast.success('Removed from wishlist');
+          window.dispatchEvent(new CustomEvent('wishlist:updated'));
         })
         .catch(() => toast.error('Failed to remove from wishlist'));
     } else {
@@ -571,8 +571,6 @@ I'm interested in this product. Could you please provide more information?`)
   const isDiscounted = discountedPrice !== null;
   const currentPrice = region === 'AE' ? productData.priceAED : productData.priceINR;
   const displayPrice = isDiscounted ? discountedPrice : currentPrice;
-
-
 
   const PriceDisplay = () => (
     <motion.div
@@ -1139,7 +1137,6 @@ I'm interested in this product. Could you please provide more information?`)
             </div>
           </motion.div>
 
-          {/* Product Details Tabs */}
           <div className="mt-12">
             <div className="border-b border-gray-200">
               <nav className="flex space-x-8">
@@ -1297,5 +1294,3 @@ I'm interested in this product. Could you please provide more information?`)
     </div>
   )
 }
-
-// Missing icons import
