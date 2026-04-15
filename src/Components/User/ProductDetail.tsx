@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "../Layouts/button"
-import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, Truck, Shield, Play, Star, Package, Globe, CheckCircle, ArrowRight, Sparkles, Tag, Scale, Ruler, Palette, Diamond, Hash, Percent, MapPin, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, Truck, Shield, Play, Star, Globe, CheckCircle, ArrowRight, Sparkles, Tag, Scale, Ruler, Palette, Diamond, Hash, Percent, MapPin } from "lucide-react"
 import { cn } from "../../lib/util"
 import { useParams, Link } from "react-router-dom"
 import axios from "axios"
@@ -9,7 +9,7 @@ import NavBar from "../Layouts/Navbar"
 import Footer from "../Layouts/Footer"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "react-hot-toast"
-import { Eye, Phone, Mail } from "lucide-react"
+import {  Phone, Mail } from "lucide-react"
 
 interface ProductImages {
   image1: string
