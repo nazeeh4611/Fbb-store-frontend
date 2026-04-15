@@ -69,6 +69,21 @@ interface UserData {
   role?: string;
 }
 
+const CartItemSkeleton = () => (
+  <div className="flex items-start gap-3 pb-4 border-b border-gray-100 animate-pulse">
+    <div className="w-20 h-20 flex-shrink-0 rounded-lg bg-gray-200" />
+    <div className="flex-1 space-y-2">
+      <div className="h-4 bg-gray-200 rounded w-3/4" />
+      <div className="h-3 bg-gray-200 rounded w-1/2" />
+      <div className="h-3 bg-gray-200 rounded w-1/3" />
+      <div className="flex items-center justify-between mt-2">
+        <div className="h-8 bg-gray-200 rounded w-24" />
+        <div className="h-4 bg-gray-200 rounded w-16" />
+      </div>
+    </div>
+  </div>
+);
+
 const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [, setIsScrolled] = useState(false);
@@ -80,7 +95,8 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [cartTotal, setCartTotal] = useState(0);
-  const [, setLoading] = useState(false);
+  const [cartLoading, setCartLoading] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
@@ -92,9 +108,9 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   const cartRef = useRef<HTMLDivElement>(null);
   const wishlistRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const cartFetchController = useRef<AbortController | null>(null);
 
   const navigate = useNavigate();
-
   const api = axios.create({ baseURL: baseurl });
 
   const navItems: NavItem[] = [
@@ -113,16 +129,24 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
 
   useEffect(() => {
     checkAuthStatus();
-    fetchCartData();
-    fetchWishlistData();
+    fetchCartData(false);
+    fetchWishlistData(false);
   }, []);
 
   useEffect(() => {
-    const handleCartUpdate = () => {
-      fetchCartData();
+    const handleCartUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        const { cartCount: newCount, cartTotal: newTotal, cart: newCart } = customEvent.detail;
+        if (newCount !== undefined) setCartCount(newCount);
+        if (newTotal !== undefined) setCartTotal(newTotal);
+        if (newCart !== undefined) setCartItems(newCart);
+      } else {
+        fetchCartData(false);
+      }
     };
     const handleWishlistUpdate = () => {
-      fetchWishlistData();
+      fetchWishlistData(false);
     };
     window.addEventListener('cart:updated', handleCartUpdate);
     window.addEventListener('wishlist:updated', handleWishlistUpdate);
@@ -133,11 +157,15 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   }, []);
 
   useEffect(() => {
-    if (cartOpen) fetchCartData();
+    if (cartOpen) {
+      fetchCartData(true);
+    }
   }, [cartOpen]);
 
   useEffect(() => {
-    if (wishlistOpen) fetchWishlistData();
+    if (wishlistOpen) {
+      fetchWishlistData(true);
+    }
   }, [wishlistOpen]);
 
   useEffect(() => {
@@ -188,25 +216,36 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
     }
   };
 
-  const fetchCartData = async () => {
+  const fetchCartData = async (showLoader: boolean = true) => {
+    if (cartFetchController.current) {
+      cartFetchController.current.abort();
+    }
+    cartFetchController.current = new AbortController();
+
     try {
-      setLoading(true);
+      if (showLoader) setCartLoading(true);
       const token = localStorage.getItem('token');
-      const response = await api.get('/cart', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const response = await api.get('/cart', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal: cartFetchController.current.signal,
+      });
       if (response.data.success) {
         setCartItems(response.data.cart || []);
         setCartCount(response.data.cartCount || 0);
         setCartTotal(response.data.cartTotal || 0);
       }
-    } catch (error) {
-      console.error('Error fetching cart:', error);
+    } catch (error: any) {
+      if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
+        console.error('Error fetching cart:', error);
+      }
     } finally {
-      setLoading(false);
+      setCartLoading(false);
     }
   };
 
-  const fetchWishlistData = async () => {
+  const fetchWishlistData = async (showLoader: boolean = true) => {
     try {
+      if (showLoader) setWishlistLoading(true);
       const token = localStorage.getItem('token');
       const response = await api.get('/cart/wishlist', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       if (response.data.success) {
@@ -215,6 +254,8 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
       }
     } catch (error) {
       console.error('Error fetching wishlist:', error);
+    } finally {
+      setWishlistLoading(false);
     }
   };
 
@@ -245,32 +286,57 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   };
 
   const removeFromCart = async (cartItemId: string) => {
+    setCartItems(prev => prev.filter(item => item._id !== cartItemId));
+    setCartCount(prev => {
+      const removedItem = cartItems.find(item => item._id === cartItemId);
+      return prev - (removedItem?.quantity || 1);
+    });
+    setCartTotal(prev => {
+      const removedItem = cartItems.find(item => item._id === cartItemId);
+      return prev - ((removedItem?.price || 0) * (removedItem?.quantity || 1));
+    });
+
     try {
       const token = localStorage.getItem('token');
       await api.delete(`/cart/cart/remove/${cartItemId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      fetchCartData();
+      fetchCartData(false);
     } catch (error) {
       console.error('Error removing from cart:', error);
+      fetchCartData(false);
     }
   };
 
   const updateCartQuantity = async (cartItemId: string, newQuantity: number) => {
+    setCartItems(prev =>
+      prev.map(item => item._id === cartItemId ? { ...item, quantity: newQuantity } : item)
+    );
+    const updatedItem = cartItems.find(item => item._id === cartItemId);
+    if (updatedItem) {
+      const diff = newQuantity - updatedItem.quantity;
+      setCartCount(prev => prev + diff);
+      setCartTotal(prev => prev + diff * updatedItem.price);
+    }
+
     try {
       const token = localStorage.getItem('token');
       await api.put('/cart/cart/update', { cartItemId, quantity: newQuantity }, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      fetchCartData();
+      fetchCartData(false);
     } catch (error) {
       console.error('Error updating cart:', error);
+      fetchCartData(false);
     }
   };
 
   const removeFromWishlist = async (productId: string) => {
+    setWishlistItems(prev => prev.filter(item => item.product._id !== productId));
+    setWishlistCount(prev => prev - 1);
     try {
       const token = localStorage.getItem('token');
       await api.delete(`/cart/wishlist/remove/${productId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      fetchWishlistData();
+      fetchWishlistData(false);
     } catch (error) {
       console.error('Error removing from wishlist:', error);
+      fetchWishlistData(false);
     }
   };
 
@@ -278,8 +344,8 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
     try {
       const token = localStorage.getItem('token');
       await api.post('/cart/wishlist/move-to-cart', { productId }, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      fetchCartData();
-      fetchWishlistData();
+      fetchCartData(false);
+      fetchWishlistData(false);
     } catch (error) {
       console.error('Error moving to cart:', error);
     }
@@ -301,15 +367,15 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
     setIsLogged(true);
     setUser(userData);
     setShowAuthModal(false);
-    fetchCartData();
-    fetchWishlistData();
+    fetchCartData(false);
+    fetchWishlistData(false);
   };
 
   const handleOtpVerifySuccess = async () => {
     await checkAuthStatus();
     setShowOtpModal(false);
-    fetchCartData();
-    fetchWishlistData();
+    fetchCartData(false);
+    fetchWishlistData(false);
   };
 
   const handleLogout = async () => {
@@ -348,7 +414,11 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
         <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white">
           <h3 className="text-lg font-semibold text-gray-900">Shopping Cart</h3>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">{cartCount} items</span>
+            {cartLoading ? (
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-amber-500 rounded-full animate-spin" />
+            ) : (
+              <span className="text-sm text-gray-600">{cartCount} items</span>
+            )}
             <button onClick={() => setCartOpen(false)} className="text-gray-500 hover:text-gray-900">
               <X className="h-5 w-5" />
             </button>
@@ -356,7 +426,13 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
-          {cartItems.length === 0 ? (
+          {cartLoading ? (
+            <div className="space-y-4">
+              <CartItemSkeleton />
+              <CartItemSkeleton />
+              <CartItemSkeleton />
+            </div>
+          ) : cartItems.length === 0 ? (
             <div className="text-center py-16">
               <ShoppingCart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 font-medium">Your cart is empty</p>
@@ -407,7 +483,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
           )}
         </div>
 
-        {cartItems.length > 0 && (
+        {!cartLoading && cartItems.length > 0 && (
           <div className="p-4 border-t border-gray-200 bg-white">
             <div className="flex justify-between items-center mb-4">
               <span className="text-gray-600 font-medium">Subtotal</span>
@@ -429,6 +505,19 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
             </div>
           </div>
         )}
+
+        {cartLoading && (
+          <div className="p-4 border-t border-gray-200 bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <div className="h-5 bg-gray-200 rounded w-20 animate-pulse" />
+              <div className="h-6 bg-gray-200 rounded w-24 animate-pulse" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-12 bg-gray-200 rounded-lg animate-pulse" />
+              <div className="h-12 bg-gray-200 rounded-lg animate-pulse" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -447,7 +536,11 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
         <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white">
           <h3 className="text-lg font-semibold text-gray-900">Wishlist</h3>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">{wishlistCount} items</span>
+            {wishlistLoading ? (
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-amber-500 rounded-full animate-spin" />
+            ) : (
+              <span className="text-sm text-gray-600">{wishlistCount} items</span>
+            )}
             <button onClick={() => setWishlistOpen(false)} className="text-gray-500 hover:text-gray-900">
               <X className="h-5 w-5" />
             </button>
@@ -455,7 +548,12 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
-          {wishlistItems.length === 0 ? (
+          {wishlistLoading ? (
+            <div className="space-y-4">
+              <CartItemSkeleton />
+              <CartItemSkeleton />
+            </div>
+          ) : wishlistItems.length === 0 ? (
             <div className="text-center py-16">
               <Heart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 font-medium">Your wishlist is empty</p>

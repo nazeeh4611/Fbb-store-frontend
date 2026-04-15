@@ -433,7 +433,13 @@ I'm interested in this product. Could you please provide more information?`)
   
       if (response.data.success) {
         toast.success('Product added to cart!');
-        window.dispatchEvent(new CustomEvent('cart:updated'));
+        window.dispatchEvent(new CustomEvent('cart:updated', {
+          detail: {
+            cartCount: response.data.cartCount,
+            cartTotal: response.data.cartTotal,
+            cart: response.data.cart,
+          }
+        }));
       } else {
         toast.error(response.data.message || 'Failed to add to cart');
       }
@@ -1185,7 +1191,6 @@ I'm interested in this product. Could you please provide more information?`)
               )}
 
               {activeTab === 'specifications' && renderSpecifications()}
-
               {activeTab === 'seller' && renderSellerInfo()}
 
               {activeTab === 'reviews' && (
