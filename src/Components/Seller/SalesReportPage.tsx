@@ -29,13 +29,6 @@ interface SalesDataPoint {
 interface CategoryDataPoint {
   name: string
   value: number
-  [key: string]: string | number
-}
-
-interface MonthlyTrendPoint {
-  month: string
-  current: number
-  previous: number
 }
 
 interface SummaryData {
@@ -50,7 +43,7 @@ interface ReportData {
   summary: SummaryData
   salesData: SalesDataPoint[]
   categoryData: CategoryDataPoint[]
-  monthlyTrends: MonthlyTrendPoint[]
+  monthlyTrends: Array<{ month: string; current: number; previous: number }>
 }
 
 const SalesReportPage: React.FC = () => {
@@ -72,32 +65,32 @@ const SalesReportPage: React.FC = () => {
   const navigate = useNavigate()
   const token = useGetToken('sellerToken')
 
-  const api = axios.create({
-    baseURL: baseurl
-  })
-
   const fetchReportData = async () => {
     try {
       setLoading(true)
-      const response = await api.get(`/seller/sales-report?range=${timeRange}`, {
+      const response = await axios.get(`${baseurl}/seller/sales-report?range=${timeRange}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      const data = response.data?.data || response.data
 
-      setReportData({
-        summary: data.summary || {
-          totalSales: 0,
-          totalOrders: 0,
-          totalProducts: 0,
-          avgOrderValue: 0,
-          growthRate: 0
-        },
-        salesData: data.salesData || [],
-        categoryData: data.categoryData || [],
-        monthlyTrends: data.monthlyTrends || []
-      })
+      if (response.data.success && response.data.data) {
+        const data = response.data.data
+        setReportData({
+          summary: {
+            totalSales: data.summary?.totalSales || 0,
+            totalOrders: data.summary?.totalOrders || 0,
+            totalProducts: data.summary?.totalProducts || 0,
+            avgOrderValue: data.summary?.avgOrderValue || 0,
+            growthRate: data.summary?.growthRate || 0
+          },
+          salesData: data.salesData || [],
+          categoryData: data.categoryData || [],
+          monthlyTrends: data.monthlyTrends || []
+        })
+      } else {
+        throw new Error(response.data.message || 'Invalid response format')
+      }
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to load sales report')
+      toast.error(error?.response?.data?.message || error?.message || 'Failed to load sales report')
     } finally {
       setLoading(false)
     }
@@ -123,7 +116,7 @@ const SalesReportPage: React.FC = () => {
       <p className="text-sm text-gray-500">{title}</p>
       <h3 className="text-2xl font-bold mt-2">
         {title.includes('Sales') || title.includes('Order Value')
-          ? `₹${value.toLocaleString()}`
+          ? `₹${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
           : value.toLocaleString()}
       </h3>
     </div>
@@ -174,14 +167,18 @@ const SalesReportPage: React.FC = () => {
             <RechartsLineChart data={reportData.salesData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
-              <YAxis />
+              <YAxis yAxisId="left" />
+              <YAxis yAxisId="right" orientation="right" />
               <Tooltip
-  formatter={(value: number | string | undefined) =>
-    typeof value === 'number' ? `₹${value.toLocaleString()}` : value || ''
-  }
-/>              <Legend />
-              <Line type="monotone" dataKey="sales" stroke="#8884d8" strokeWidth={2} name="Sales (₹)" />
-              <Line type="monotone" dataKey="orders" stroke="#82ca9d" strokeWidth={2} name="Orders" />
+                formatter={(value: any, name: any) => {
+                  if (name === 'sales') return [`₹${Number(value).toLocaleString()}`, 'Sales']
+                  if (name === 'orders') return [value, 'Orders']
+                  return [value, name]
+                }}
+              />
+              <Legend />
+              <Line yAxisId="left" type="monotone" dataKey="sales" stroke="#8884d8" strokeWidth={2} name="sales" />
+              <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#82ca9d" strokeWidth={2} name="orders" />
             </RechartsLineChart>
           </ResponsiveContainer>
         </div>
@@ -192,24 +189,23 @@ const SalesReportPage: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Category Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
             <RechartsPieChart>
-              <Pie
-                data={reportData.categoryData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-              >
+            <Pie
+  data={reportData.categoryData as any}
+  dataKey="value"
+  nameKey="name"
+  cx="50%"
+  cy="50%"
+  outerRadius={100}
+  label={(props: any) =>
+    `${props.name}: ${((props.percent || 0) * 100).toFixed(0)}%`
+  }
+>
                 {reportData.categoryData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip
-  formatter={(value: number | string | undefined) =>
-    typeof value === 'number' ? `₹${value.toLocaleString()}` : value || ''
-  }
-/>              <Legend />
+              <Tooltip formatter={(value: any) => `₹${Number(value).toLocaleString()}`} />
+              <Legend />
             </RechartsPieChart>
           </ResponsiveContainer>
         </div>

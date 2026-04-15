@@ -74,7 +74,7 @@ export default function ShopLayout(): JSX.Element {
   const navigate = useNavigate()
   const params = useParams<{ subcategoryId?: string; categoryId?: string }>()
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const hasFetchedRef = useRef(false)
+  const hasFetchedRef = useRef(false)
 
   const api = useMemo(() => axios.create({ baseURL: baseurl }), [])
 
@@ -93,10 +93,11 @@ export default function ShopLayout(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(true)
   const [categoriesLoading, setCategoriesLoading] = useState<boolean>(true)
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>('')
   const [selectedSubCategoryName, setSelectedSubCategoryName] = useState<string>('')
   const [totalProducts, setTotalProducts] = useState<number>(0)
   const [isFiltering, setIsFiltering] = useState<boolean>(false)
-
 
   useEffect(() => {
     const handleScroll = (): void => { setScrolled(window.scrollY > 100) }
@@ -121,11 +122,15 @@ export default function ShopLayout(): JSX.Element {
     navigate(`/product/${productId}`)
   }, [navigate])
 
-  const fetchProducts = useCallback(async (subCatId?: string, searchVal?: string): Promise<void> => {
+  const fetchProducts = useCallback(async (subCatId?: string, catId?: string, searchVal?: string): Promise<void> => {
     setLoading(true)
     try {
       const queryParams: Record<string, string | number> = { page: 1, limit: 100 }
-      if (subCatId) queryParams.subcategory = subCatId
+      if (subCatId) {
+        queryParams.subcategory = subCatId
+      } else if (catId) {
+        queryParams.category = catId
+      }
       if (searchVal) queryParams.search = searchVal
 
       const response = await api.get<ApiResponse>('/get-product', { params: queryParams })
@@ -203,15 +208,17 @@ export default function ShopLayout(): JSX.Element {
       } else if (params.categoryId) {
         const category = res.data.categories.find(c => c._id === params.categoryId)
         if (category) {
+          setSelectedCategory(category._id)
+          setSelectedCategoryName(category.name)
           const subcategories = await fetchSubcategoriesForCategory(category._id)
           setCategories(prev => prev.map(c => 
             c._id === category._id ? { ...c, subcategories } : c
           ))
           setExpandedCategories({ [category._id]: true })
-        }
-        if (!hasFetchedRef.current) {
-          hasFetchedRef.current = true
-          fetchProducts()
+          if (!hasFetchedRef.current) {
+            hasFetchedRef.current = true
+            fetchProducts(undefined, category._id)
+          }
         }
       } else {
         if (!hasFetchedRef.current) {
@@ -235,12 +242,12 @@ export default function ShopLayout(): JSX.Element {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
     setIsFiltering(true)
     searchTimeoutRef.current = setTimeout(() => {
-      fetchProducts(selectedSubCategory || undefined, searchTerm || undefined)
+      fetchProducts(selectedSubCategory || undefined, selectedCategory || undefined, searchTerm || undefined)
     }, 500)
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current) }
-  }, [searchTerm, selectedSubCategory, fetchProducts])
+  }, [searchTerm, selectedSubCategory, selectedCategory, fetchProducts])
 
-  const handleCategoryClick = useCallback(async (categoryId: string, _categoryName?: string): Promise<void> => {
+  const handleCategoryClick = useCallback(async (categoryId: string, _categoryName: string): Promise<void> => {
     const isExpanded = expandedCategories[categoryId]
     
     if (!isExpanded) {
@@ -259,11 +266,27 @@ export default function ShopLayout(): JSX.Element {
     }))
   }, [expandedCategories, categories, fetchSubcategoriesForCategory])
 
+  const handleCategorySelect = useCallback((categoryId: string, categoryName: string): void => {
+    if (selectedCategory === categoryId) return
+    
+    setSelectedCategory(categoryId)
+    setSelectedCategoryName(categoryName)
+    setSelectedSubCategory('')
+    setSelectedSubCategoryName('')
+    setVisibleProducts(8)
+    fetchProducts(undefined, categoryId)
+    
+    navigate(`/shop/category/${categoryId}`, { replace: true })
+    setShowMobileSidebar(false)
+  }, [selectedCategory, fetchProducts, navigate])
+
   const handleSubCategorySelect = useCallback((subCat: SubCategory, categoryId: string): void => {
     if (selectedSubCategory === subCat._id) return
     
     setSelectedSubCategory(subCat._id)
     setSelectedSubCategoryName(subCat.name)
+    setSelectedCategory('')
+    setSelectedCategoryName('')
     setVisibleProducts(8)
     fetchProducts(subCat._id)
     
@@ -279,6 +302,8 @@ export default function ShopLayout(): JSX.Element {
   const handleClearFilters = useCallback((): void => {
     setSelectedSubCategory('')
     setSelectedSubCategoryName('')
+    setSelectedCategory('')
+    setSelectedCategoryName('')
     setSearchTerm('')
     setPriceRange([0, 50000])
     setVisibleProducts(8)
@@ -310,13 +335,15 @@ export default function ShopLayout(): JSX.Element {
 
   const currentTitle = useMemo((): string => {
     if (selectedSubCategoryName) return selectedSubCategoryName
+    if (selectedCategoryName) return selectedCategoryName
     return 'PREMIUM SHOP'
-  }, [selectedSubCategoryName])
+  }, [selectedSubCategoryName, selectedCategoryName])
 
   const currentDescription = useMemo((): string => {
     if (selectedSubCategoryName) return `Explore our ${selectedSubCategoryName} collection`
+    if (selectedCategoryName) return `Discover our ${selectedCategoryName} collection`
     return "Discover our curated collection of premium products"
-  }, [selectedSubCategoryName])
+  }, [selectedSubCategoryName, selectedCategoryName])
 
   const showSkeleton = loading || isFiltering
 
@@ -326,7 +353,7 @@ export default function ShopLayout(): JSX.Element {
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <Package className="w-5 h-5" /> Categories
         </h2>
-        {(selectedSubCategory || searchTerm) && (
+        {(selectedSubCategory || selectedCategory || searchTerm) && (
           <button onClick={handleClearFilters} className="text-xs text-amber-600 hover:text-amber-700 transition-colors">
             Clear all
           </button>
@@ -343,7 +370,7 @@ export default function ShopLayout(): JSX.Element {
             <button
               onClick={handleClearFilters}
               className={`w-full text-left px-3 sm:px-4 py-2.5 rounded-xl transition-all font-semibold text-sm ${
-                !selectedSubCategory && !searchTerm
+                !selectedSubCategory && !selectedCategory && !searchTerm
                   ? 'bg-amber-500 text-white shadow-md'
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
@@ -354,20 +381,30 @@ export default function ShopLayout(): JSX.Element {
             {categories.map((category) => {
               const isExpanded = expandedCategories[category._id]
               const hasSubcategories = category.subcategories && category.subcategories.length > 0
+              const isCategorySelected = selectedCategory === category._id
               
               return (
                 <div key={category._id} className="border-b border-gray-50 last:border-0">
-                  <button
-                    onClick={() => handleCategoryClick(category._id, category.name)}
-                    className="w-full flex items-center justify-between px-3 sm:px-4 py-3 rounded-xl transition-all text-left text-gray-800 hover:bg-gray-50 hover:text-amber-600"
-                  >
-                    <span className="font-medium text-sm sm:text-base">{category.name}</span>
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => handleCategorySelect(category._id, category.name)}
+                      className={`flex-1 text-left px-3 sm:px-4 py-3 rounded-xl transition-all ${
+                        isCategorySelected
+                          ? 'bg-amber-100 text-amber-700 font-semibold'
+                          : 'text-gray-800 hover:bg-gray-50 hover:text-amber-600'
+                      }`}
+                    >
+                      <span className="font-medium text-sm sm:text-base">{category.name}</span>
+                    </button>
                     {hasSubcategories && (
-                      isExpanded ? 
-                        <ChevronUp className="w-4 h-4 text-gray-400" /> : 
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      <button
+                        onClick={() => handleCategoryClick(category._id, category.name)}
+                        className="p-2 mr-1 text-gray-400 hover:text-gray-600"
+                      >
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
                     )}
-                  </button>
+                  </div>
 
                   <AnimatePresence initial={false}>
                     {isExpanded && hasSubcategories && (
@@ -490,7 +527,7 @@ export default function ShopLayout(): JSX.Element {
             <div className="mb-5 flex justify-between items-center flex-wrap gap-2">
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {selectedSubCategoryName || `${totalProducts} Premium Products`}
+                  {selectedSubCategoryName || selectedCategoryName || `${totalProducts} Premium Products`}
                 </h2>
                 <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Showing {products.length} of {filteredProducts.length} products</p>
               </div>
@@ -503,10 +540,16 @@ export default function ShopLayout(): JSX.Element {
             ) : products.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                  <X className="w-8 h-8 text-gray-400" />
+                  <Package className="w-8 h-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">No Products Found</h3>
-                <p className="text-gray-500 mb-5 text-sm">Try adjusting your search or filter criteria</p>
+                <p className="text-gray-500 mb-5 text-sm">
+                  {selectedCategoryName 
+                    ? `No products available in ${selectedCategoryName} category yet.` 
+                    : selectedSubCategoryName
+                    ? `No products available in ${selectedSubCategoryName} collection yet.`
+                    : "Try adjusting your search or filter criteria"}
+                </p>
                 <button onClick={handleClearFilters} className="px-5 py-2.5 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 transition-colors text-sm">
                   View All Products
                 </button>
@@ -595,7 +638,7 @@ export default function ShopLayout(): JSX.Element {
               </motion.div>
             )}
 
-            {!showSkeleton && visibleProducts < filteredProducts.length && (
+            {!showSkeleton && visibleProducts < filteredProducts.length && filteredProducts.length > 0 && (
               <div className="mt-10 flex justify-center">
                 <button onClick={handleShowMore} className="px-6 py-2.5 bg-amber-500 text-white font-semibold rounded-xl hover:bg-amber-600 transition-all text-sm shadow-md">
                   Load More Products
@@ -631,8 +674,6 @@ export default function ShopLayout(): JSX.Element {
       >
         <ChevronUp className="text-white h-5 w-5" />
       </motion.button>
-
-    
 
       <Footer />
     </div>

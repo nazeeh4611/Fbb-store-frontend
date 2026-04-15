@@ -2,7 +2,8 @@ import React, { useState, useEffect, ChangeEvent } from 'react';
 import axios from 'axios';
 import {
   Package, Truck, CheckCircle, XCircle, Clock,
-  Search, Download, Eye,
+  Search, Download, Eye, MapPin, Phone, Mail, User,
+  CreditCard, Hash, PackageCheck
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +15,24 @@ interface User {
   name?: string;
   email?: string;
   phone?: string;
+  address?: {
+    shipping?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      pincode?: string;
+      phone?: string;
+    };
+    billing?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      pincode?: string;
+      phone?: string;
+    };
+  };
 }
 
 interface Product {
@@ -24,14 +43,15 @@ interface Product {
   };
 }
 
-interface ShippingAddress {
+interface Address {
   name?: string;
+  phone?: string;
   street?: string;
   city?: string;
   state?: string;
-  pincode?: string;
   country?: string;
-  phone?: string;
+  pincode?: string;
+  email?: string;
 }
 
 interface SellerOrder {
@@ -41,6 +61,7 @@ interface SellerOrder {
   total: number;
   trackingNumber?: string;
   shippedAt?: string;
+  sellerStatus?: string;
 }
 
 interface OrderItem {
@@ -49,6 +70,8 @@ interface OrderItem {
   price: number;
   selectedColor?: string;
   selectedSize?: string;
+  itemStatus?: string;
+  sellerStatus?: string;
 }
 
 interface Order {
@@ -62,8 +85,12 @@ interface Order {
   createdAt: string;
   paymentMethod: string;
   paymentStatus: string;
-  shippingAddress?: ShippingAddress;
+  shippingAddress?: Address;
+  billingAddress?: Address;
   sellerOrder?: SellerOrder;
+  subtotal?: number;
+  shipping?: number;
+  tax?: number;
 }
 
 const SellerOrders: React.FC = () => {
@@ -127,23 +154,35 @@ const SellerOrders: React.FC = () => {
     if (!token) return;
     try {
       setUpdatingStatus(true);
-      await api.post('/seller/orders/update-status', {
+      
+      const payload: any = {
         orderId,
-        itemId,
         status,
-        trackingNumber
-      }, {
+        trackingNumber: trackingNumber || undefined
+      };
+      
+      if (itemId) {
+        payload.itemId = itemId;
+      }
+      
+      await api.post('/seller/orders/update-status', payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
-      toast.success('Status updated successfully');
+  
+      toast.success(`Order ${status === 'accepted' ? 'accepted' : 
+                         status === 'processing' ? 'moved to processing' :
+                         status === 'shipped' ? 'marked as shipped' :
+                         status === 'delivered' ? 'marked as delivered' :
+                         status === 'cancelled' ? 'cancelled' : 'updated'} successfully`);
       fetchOrders();
+      
       if (selectedOrder && selectedOrder.orderId === orderId) {
         setSelectedOrder(prev => prev ? { ...prev, status, sellerStatus: status } : null);
       }
     } catch (error: any) {
       console.error('Error updating status:', error);
-      toast.error(error.response?.data?.message || 'Failed to update status');
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to update status';
+      toast.error(errorMessage);
     } finally {
       setUpdatingStatus(false);
     }
@@ -192,7 +231,7 @@ const SellerOrders: React.FC = () => {
     const trackingNumber = prompt('Enter tracking number:');
     if (trackingNumber && trackingNumber.trim()) {
       updateItemStatus(orderId, null, 'shipped', trackingNumber.trim());
-    } else if (trackingNumber !== null) {
+    } else if (trackingNumber !== null && trackingNumber === '') {
       toast.error('Please enter a valid tracking number');
     }
   };
@@ -278,10 +317,11 @@ const SellerOrders: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">{order.orderId}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
                       <div>
                         <div className="font-medium text-gray-900">{order.user?.name || 'Guest'}</div>
                         <div className="text-sm text-gray-500">{order.user?.email || 'No email'}</div>
+                        <div className="text-sm text-gray-500">{order.user?.phone || 'No phone'}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -291,7 +331,7 @@ const SellerOrders: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium">₹{order.total}</div>
+                      <div className="font-medium">₹{order.total?.toLocaleString() || order.sellerOrder?.total?.toLocaleString() || '0'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.sellerStatus || order.status)} capitalize`}>
@@ -322,10 +362,14 @@ const SellerOrders: React.FC = () => {
                               <CheckCircle className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => updateItemStatus(order.orderId, null, 'cancelled')}
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to cancel this order?')) {
+                                  updateItemStatus(order.orderId, null, 'cancelled');
+                                }
+                              }}
                               disabled={updatingStatus}
                               className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50 transition-colors"
-                              title="Reject Order"
+                              title="Reject/Cancel Order"
                             >
                               <XCircle className="h-4 w-4" />
                             </button>
@@ -333,25 +377,90 @@ const SellerOrders: React.FC = () => {
                         )}
 
                         {(order.sellerStatus || order.status) === 'accepted' && (
-                          <button
-                            onClick={() => updateItemStatus(order.orderId, null, 'processing')}
-                            disabled={updatingStatus}
-                            className="p-1 text-blue-600 hover:text-blue-800 disabled:opacity-50 transition-colors"
-                            title="Start Processing"
-                          >
-                            <Clock className="h-4 w-4" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => updateItemStatus(order.orderId, null, 'processing')}
+                              disabled={updatingStatus}
+                              className="p-1 text-blue-600 hover:text-blue-800 disabled:opacity-50 transition-colors"
+                              title="Start Processing"
+                            >
+                              <Clock className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to cancel this order?')) {
+                                  updateItemStatus(order.orderId, null, 'cancelled');
+                                }
+                              }}
+                              disabled={updatingStatus}
+                              className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50 transition-colors"
+                              title="Cancel Order"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </>
                         )}
 
                         {(order.sellerStatus || order.status) === 'processing' && (
-                          <button
-                            onClick={() => handleMarkAsShipped(order.orderId)}
-                            disabled={updatingStatus}
-                            className="p-1 text-indigo-600 hover:text-indigo-800 disabled:opacity-50 transition-colors"
-                            title="Mark as Shipped"
-                          >
-                            <Truck className="h-4 w-4" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleMarkAsShipped(order.orderId)}
+                              disabled={updatingStatus}
+                              className="p-1 text-indigo-600 hover:text-indigo-800 disabled:opacity-50 transition-colors"
+                              title="Mark as Shipped"
+                            >
+                              <Truck className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to cancel this order?')) {
+                                  updateItemStatus(order.orderId, null, 'cancelled');
+                                }
+                              }}
+                              disabled={updatingStatus}
+                              className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50 transition-colors"
+                              title="Cancel Order"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+
+                        {(order.sellerStatus || order.status) === 'shipped' && (
+                          <>
+                            <button
+                              onClick={() => updateItemStatus(order.orderId, null, 'delivered')}
+                              disabled={updatingStatus}
+                              className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50 transition-colors"
+                              title="Mark as Delivered"
+                            >
+                              <PackageCheck className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to cancel this shipped order?')) {
+                                  updateItemStatus(order.orderId, null, 'cancelled');
+                                }
+                              }}
+                              disabled={updatingStatus}
+                              className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50 transition-colors"
+                              title="Cancel Order"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+
+                        {(order.sellerStatus || order.status) === 'delivered' && (
+                          <span className="text-xs text-green-600 font-medium px-2 py-1 bg-green-50 rounded-full">
+                            Completed
+                          </span>
+                        )}
+
+                        {(order.sellerStatus || order.status) === 'cancelled' && (
+                          <span className="text-xs text-red-600 font-medium px-2 py-1 bg-red-50 rounded-full">
+                            Cancelled
+                          </span>
                         )}
                       </div>
                     </td>
@@ -370,7 +479,7 @@ const SellerOrders: React.FC = () => {
             if (e.target === e.currentTarget) setSelectedOrder(null);
           }}
         >
-          <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Order Details</h2>
@@ -383,31 +492,125 @@ const SellerOrders: React.FC = () => {
               </div>
 
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Order ID</h3>
-                    <p className="font-medium">{selectedOrder.orderId}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Order Date</h3>
-                    <p className="font-medium">{formatDate(selectedOrder.createdAt || selectedOrder.orderDate)}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Customer</h3>
-                    <p className="font-medium">{selectedOrder.user?.name || 'Guest'}</p>
-                    <p className="text-sm text-gray-500">{selectedOrder.user?.phone || 'No phone'}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Payment</h3>
-                    <p className="font-medium capitalize">{selectedOrder.paymentMethod}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${selectedOrder.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                      {selectedOrder.paymentStatus}
-                    </span>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Hash className="h-5 w-5" />
+                    Order Information
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Order ID</p>
+                      <p className="font-medium text-sm">{selectedOrder.orderId}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Order Date</p>
+                      <p className="font-medium text-sm">{formatDate(selectedOrder.createdAt || selectedOrder.orderDate)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Payment Method</p>
+                      <p className="font-medium text-sm capitalize">{selectedOrder.paymentMethod}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Payment Status</p>
+                      <span className={`text-xs px-2 py-1 rounded-full ${selectedOrder.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {selectedOrder.paymentStatus}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Customer Details
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-start gap-2">
+                      <User className="h-4 w-4 text-gray-400 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-gray-500">Full Name</p>
+                        <p className="font-medium">{selectedOrder.user?.name || 'Guest'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Mail className="h-4 w-4 text-gray-400 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-gray-500">Email Address</p>
+                        <p className="font-medium">{selectedOrder.user?.email || 'No email provided'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Phone className="h-4 w-4 text-gray-400 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-gray-500">Phone Number</p>
+                        <p className="font-medium">{selectedOrder.user?.phone || selectedOrder.shippingAddress?.phone || 'No phone provided'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-blue-600" />
+                    Shipping Address
+                  </h3>
+                  {selectedOrder.shippingAddress ? (
+                    <div className="space-y-2">
+                      <p className="font-medium">{selectedOrder.shippingAddress.name || selectedOrder.user?.name}</p>
+                      <p className="text-gray-700">{selectedOrder.shippingAddress.street || 'Street address not provided'}</p>
+                      <p className="text-gray-700">
+                        {selectedOrder.shippingAddress.city && selectedOrder.shippingAddress.state 
+                          ? `${selectedOrder.shippingAddress.city}, ${selectedOrder.shippingAddress.state}`
+                          : 'City, State not provided'}
+                      </p>
+                      <p className="text-gray-700">
+                        {selectedOrder.shippingAddress.pincode 
+                          ? `Pincode: ${selectedOrder.shippingAddress.pincode}`
+                          : 'Pincode not provided'}
+                      </p>
+                      <p className="text-gray-700">{selectedOrder.shippingAddress.country || 'Country not provided'}</p>
+                      <p className="text-gray-700 flex items-center gap-2 mt-2">
+                        <Phone className="h-4 w-4" />
+                        {selectedOrder.shippingAddress.phone || selectedOrder.user?.phone || 'No phone provided'}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 italic">No shipping address available</p>
+                  )}
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-green-600" />
+                    Billing Address
+                  </h3>
+                  {selectedOrder.billingAddress ? (
+                    <div className="space-y-2">
+                      <p className="font-medium">{selectedOrder.billingAddress.name || selectedOrder.user?.name}</p>
+                      <p className="text-gray-700">{selectedOrder.billingAddress.street || 'Street address not provided'}</p>
+                      <p className="text-gray-700">
+                        {selectedOrder.billingAddress.city && selectedOrder.billingAddress.state 
+                          ? `${selectedOrder.billingAddress.city}, ${selectedOrder.billingAddress.state}`
+                          : 'City, State not provided'}
+                      </p>
+                      <p className="text-gray-700">
+                        {selectedOrder.billingAddress.pincode 
+                          ? `Pincode: ${selectedOrder.billingAddress.pincode}`
+                          : 'Pincode not provided'}
+                      </p>
+                      <p className="text-gray-700">{selectedOrder.billingAddress.country || 'Country not provided'}</p>
+                      <p className="text-gray-700 flex items-center gap-2 mt-2">
+                        <Phone className="h-4 w-4" />
+                        {selectedOrder.billingAddress.phone || selectedOrder.user?.phone || 'No phone provided'}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 italic">Same as shipping address</p>
+                  )}
+                </div>
+
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Items</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Items Ordered</h3>
                   <div className="space-y-3">
                     {selectedOrder.items.map((item, index) => (
                       <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
@@ -423,8 +626,8 @@ const SellerOrders: React.FC = () => {
                         <div className="flex-1">
                           <h4 className="font-medium">{item.product?.name || 'Unnamed Product'}</h4>
                           <p className="text-sm text-gray-600">{item.product?.brand || 'No brand'}</p>
-                          <div className="flex gap-4 text-sm text-gray-500 mt-1">
-                            <span>Qty: {item.quantity}</span>
+                          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-1">
+                            <span>Quantity: {item.quantity}</span>
                             {item.selectedColor && <span>Color: {item.selectedColor}</span>}
                             {item.selectedSize && <span>Size: {item.selectedSize}</span>}
                           </div>
@@ -438,39 +641,24 @@ const SellerOrders: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">Shipping Address</h3>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="font-medium">{selectedOrder.shippingAddress?.name || 'No name'}</p>
-                      <p className="text-gray-600">{selectedOrder.shippingAddress?.street || 'No street'}</p>
-                      <p className="text-gray-600">
-                        {selectedOrder.shippingAddress?.city || 'City'}, {selectedOrder.shippingAddress?.state || 'State'} - {selectedOrder.shippingAddress?.pincode || 'Pincode'}
-                      </p>
-                      <p className="text-gray-600">{selectedOrder.shippingAddress?.country || 'Country'}</p>
-                      <p className="text-gray-600 mt-2">Phone: {selectedOrder.shippingAddress?.phone || 'No phone'}</p>
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Order Summary</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotal</span>
+                      <span className="font-medium">₹{selectedOrder.sellerOrder?.subtotal?.toLocaleString() || selectedOrder.subtotal?.toLocaleString() || '0'}</span>
                     </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">Order Summary</h3>
-                    <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Subtotal</span>
-                        <span className="font-medium">₹{selectedOrder.sellerOrder?.subtotal?.toLocaleString() || '0'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Shipping</span>
-                        <span className="font-medium">₹{selectedOrder.sellerOrder?.shipping?.toLocaleString() || '0'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Tax</span>
-                        <span className="font-medium">₹{selectedOrder.sellerOrder?.tax?.toLocaleString() || '0'}</span>
-                      </div>
-                      <div className="flex justify-between border-t border-gray-300 pt-2 mt-2">
-                        <span className="font-bold text-lg">Total</span>
-                        <span className="font-bold text-lg">₹{selectedOrder.sellerOrder?.total?.toLocaleString() || '0'}</span>
-                      </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Shipping Charges</span>
+                      <span className="font-medium">₹{selectedOrder.sellerOrder?.shipping?.toLocaleString() || selectedOrder.shipping?.toLocaleString() || '0'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tax (GST)</span>
+                      <span className="font-medium">₹{selectedOrder.sellerOrder?.tax?.toLocaleString() || selectedOrder.tax?.toLocaleString() || '0'}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-gray-300 pt-2 mt-2">
+                      <span className="font-bold text-lg">Total Amount</span>
+                      <span className="font-bold text-lg text-green-600">₹{selectedOrder.sellerOrder?.total?.toLocaleString() || selectedOrder.total?.toLocaleString() || '0'}</span>
                     </div>
                   </div>
                 </div>
@@ -480,7 +668,7 @@ const SellerOrders: React.FC = () => {
                     <h3 className="font-medium text-blue-900 mb-2">Shipping Information</h3>
                     <p className="text-blue-800">Tracking Number: {selectedOrder.sellerOrder.trackingNumber}</p>
                     {selectedOrder.sellerOrder.shippedAt && (
-                      <p className="text-blue-800 text-sm">Shipped on: {formatDate(selectedOrder.sellerOrder.shippedAt)}</p>
+                      <p className="text-blue-800 text-sm mt-1">Shipped on: {formatDate(selectedOrder.sellerOrder.shippedAt)}</p>
                     )}
                   </div>
                 )}
@@ -492,17 +680,130 @@ const SellerOrders: React.FC = () => {
                   >
                     Close
                   </button>
+                  
                   {(selectedOrder.sellerStatus || selectedOrder.status) === 'pending' && (
-                    <button
-                      onClick={() => {
-                        updateItemStatus(selectedOrder.orderId, null, 'accepted');
-                        setSelectedOrder(null);
-                      }}
-                      disabled={updatingStatus}
-                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors"
-                    >
-                      {updatingStatus ? 'Processing...' : 'Accept Order'}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          updateItemStatus(selectedOrder.orderId, null, 'accepted');
+                          setSelectedOrder(null);
+                        }}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors"
+                      >
+                        {updatingStatus ? 'Processing...' : 'Accept Order'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to cancel this order?')) {
+                            updateItemStatus(selectedOrder.orderId, null, 'cancelled');
+                            setSelectedOrder(null);
+                          }
+                        }}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                      >
+                        {updatingStatus ? 'Processing...' : 'Cancel Order'}
+                      </button>
+                    </>
+                  )}
+
+                  {(selectedOrder.sellerStatus || selectedOrder.status) === 'accepted' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          updateItemStatus(selectedOrder.orderId, null, 'processing');
+                          setSelectedOrder(null);
+                        }}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                      >
+                        {updatingStatus ? 'Processing...' : 'Start Processing'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to cancel this order?')) {
+                            updateItemStatus(selectedOrder.orderId, null, 'cancelled');
+                            setSelectedOrder(null);
+                          }
+                        }}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                      >
+                        {updatingStatus ? 'Processing...' : 'Cancel Order'}
+                      </button>
+                    </>
+                  )}
+
+                  {(selectedOrder.sellerStatus || selectedOrder.status) === 'processing' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          const trackingNumber = prompt('Enter tracking number:');
+                          if (trackingNumber && trackingNumber.trim()) {
+                            updateItemStatus(selectedOrder.orderId, null, 'shipped', trackingNumber.trim());
+                            setSelectedOrder(null);
+                          } else if (trackingNumber !== null && trackingNumber === '') {
+                            toast.error('Please enter a valid tracking number');
+                          }
+                        }}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+                      >
+                        {updatingStatus ? 'Processing...' : 'Mark as Shipped'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to cancel this order?')) {
+                            updateItemStatus(selectedOrder.orderId, null, 'cancelled');
+                            setSelectedOrder(null);
+                          }
+                        }}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                      >
+                        {updatingStatus ? 'Processing...' : 'Cancel Order'}
+                      </button>
+                    </>
+                  )}
+
+                  {(selectedOrder.sellerStatus || selectedOrder.status) === 'shipped' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          updateItemStatus(selectedOrder.orderId, null, 'delivered');
+                          setSelectedOrder(null);
+                        }}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors"
+                      >
+                        {updatingStatus ? 'Processing...' : 'Mark as Delivered'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to cancel this shipped order?')) {
+                            updateItemStatus(selectedOrder.orderId, null, 'cancelled');
+                            setSelectedOrder(null);
+                          }
+                        }}
+                        disabled={updatingStatus}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                      >
+                        {updatingStatus ? 'Processing...' : 'Cancel Order'}
+                      </button>
+                    </>
+                  )}
+
+                  {(selectedOrder.sellerStatus || selectedOrder.status) === 'delivered' && (
+                    <span className="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium">
+                      Order Completed
+                    </span>
+                  )}
+
+                  {(selectedOrder.sellerStatus || selectedOrder.status) === 'cancelled' && (
+                    <span className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium">
+                      Order Cancelled
+                    </span>
                   )}
                 </div>
               </div>
