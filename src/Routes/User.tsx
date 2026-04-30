@@ -11,10 +11,8 @@ import AboutPage from "../Components/Layouts/About";
 import SellerPages from "../Components/User/Sellers";
 import ContactPage from "../Components/Layouts/Contact";
 import CartPage from "../Components/User/Cart";
-// import OrdersPage from "../Components/User/OrdersPage";
 import OrderSuccess from "../Components/User/OrderSuccess";
 import CheckoutPage from "../Components/User/ChekoutPage";
-// import OrderDetails from "../Components/User/OrderDetails";
 import ProfilePage from "../Components/User/ProfilePage";
 
 const User: React.FC = () => {
@@ -25,6 +23,7 @@ const User: React.FC = () => {
           <Route path="/Shop" element={<Shop/>} />
           <Route path="/shop/category/:categoryId" element={<Shop/>} />
           <Route path="/shop/subcategory/:subcategoryId" element={<Shop/>} />
+          <Route path="/shop/seller/:sellerId" element={<Shop/>} />
           <Route path="/product" element={<ProductPage/>} />
           <Route path="/product/:id" element={<ProductPage/>}/>
           <Route path="/category" element={<CategoryPages/>}/>
@@ -38,8 +37,6 @@ const User: React.FC = () => {
           <Route path="/cart" element={<CartPage/>}/>
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order-success" element={<OrderSuccess />} />
-          {/* <Route path="/orders" element={<OrdersPage />} /> */}
-          {/* <Route path="/order/:orderId" element={<OrderDetails />} /> */}
           <Route path="/profile" element={<ProfilePage />} />
        </Routes>
       </>

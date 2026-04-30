@@ -12,7 +12,9 @@ import TrendingCarousel from "./Carousel";
 import axios from "axios";
 import { baseurl } from "../../Constant/Base";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronLeft, ChevronRight, Clock, Shield, Truck, Award, Sparkles, Zap, Heart, Grid, Package } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Clock, Shield, Truck, Award, Sparkles, Zap, Heart, Grid, Package, Store } from "lucide-react";
+
+const PRIORITY_CATEGORY_NAMES = ["MEN", "WOMEN", "GADGETS", "HOME-KITCHEN", "KIDS"];
 
 const Hero = ({ onShopNowClick = () => {} }) => {
   interface Category {
@@ -21,12 +23,25 @@ const Hero = ({ onShopNowClick = () => {} }) => {
     image: string;
   }
 
+  interface Seller {
+    _id: string;
+    name: string;
+    Image?: string;
+    profileImage?: string;
+    description?: string;
+    companyName?: string;
+    city?: string;
+    categories?: string[];
+  }
+
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
   const [trendingProducts, setTrendingProducts] = useState<any[]>([]);
   const [isHovering, setIsHovering] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingSellers, setLoadingSellers] = useState(true);
   const [loadingTrending, setLoadingTrending] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem('hasShownWelcome'));
@@ -130,6 +145,39 @@ const Hero = ({ onShopNowClick = () => {} }) => {
     }
   };
 
+  const fetchSellers = async () => {
+    setLoadingSellers(true);
+    try {
+      const cachedSellers = localStorage.getItem('cachedSellers');
+      const cachedTimestamp = localStorage.getItem('cachedSellersTimestamp');
+      const now = Date.now();
+      if (cachedSellers && cachedTimestamp && (now - parseInt(cachedTimestamp)) < 300000) {
+        const parsed = JSON.parse(cachedSellers);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSellers(parsed);
+          setLoadingSellers(false);
+          return;
+        }
+      }
+      const response = await api.get("/sellers");
+      if (response.data?.success && response.data.sellers) {
+        const activeSellers = response.data.sellers;
+        setSellers(activeSellers);
+        if (activeSellers.length > 0) {
+          localStorage.setItem('cachedSellers', JSON.stringify(activeSellers));
+          localStorage.setItem('cachedSellersTimestamp', now.toString());
+        }
+      }
+    } catch {
+      const cached = localStorage.getItem('cachedSellers');
+      if (cached) {
+        try { setSellers(JSON.parse(cached)); } catch { localStorage.removeItem('cachedSellers'); }
+      }
+    } finally {
+      setLoadingSellers(false);
+    }
+  };
+
   const fetchTrendingProducts = async () => {
     setLoadingTrending(true);
     try {
@@ -157,6 +205,7 @@ const Hero = ({ onShopNowClick = () => {} }) => {
 
   useEffect(() => {
     fetchCategories();
+    fetchSellers();
     fetchTrendingProducts();
   }, []);
 
@@ -181,6 +230,11 @@ const Hero = ({ onShopNowClick = () => {} }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleSellerClick = (sellerId: string) => {
+    navigate(`/shop/seller/${sellerId}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleProductClick = (productId: string) => {
     navigate(`/product/${productId}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -197,7 +251,22 @@ const Hero = ({ onShopNowClick = () => {} }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const displayCategories = categories.slice(0, 6);
+  const getPriorityCategories = (cats: Category[]): Category[] => {
+    const priority: Category[] = [];
+    const rest: Category[] = [];
+    for (const name of PRIORITY_CATEGORY_NAMES) {
+      const found = cats.find(c => c.name.toUpperCase() === name);
+      if (found) priority.push(found);
+    }
+    for (const cat of cats) {
+      if (!priority.find(p => p._id === cat._id)) rest.push(cat);
+    }
+    return [...priority, ...rest];
+  };
+
+  const orderedCategories = getPriorityCategories(categories);
+  const displayCategories = orderedCategories.slice(0, 6);
+  const displaySellers = sellers.slice(0, 8);
 
   const features = [
     { icon: <Truck className="w-5 h-5" />, title: "Worldwide Shipping", description: "Free on orders above $500" },
@@ -244,7 +313,6 @@ const Hero = ({ onShopNowClick = () => {} }) => {
         )}
       </AnimatePresence>
 
-      {/* Hero Slider */}
       <div
         className="relative w-full h-[420px] sm:h-[550px] md:h-[700px] lg:h-[800px] overflow-hidden group"
         onMouseEnter={() => setIsHovering(true)}
@@ -315,7 +383,6 @@ const Hero = ({ onShopNowClick = () => {} }) => {
         </div>
       </div>
 
-      {/* Stats Bar */}
       <div className="bg-black py-5 md:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex md:grid md:grid-cols-4 gap-0 overflow-x-auto scrollbar-hide snap-x snap-mandatory">
@@ -329,19 +396,93 @@ const Hero = ({ onShopNowClick = () => {} }) => {
         </div>
       </div>
 
-      {/* Shop by Category */}
-      <div className="py-7 md:py-14 bg-gradient-to-b from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-5 md:mb-8">
-            <div>
-              <div className="flex items-center gap-2">
-                <Grid className="w-5 h-5 md:w-6 md:h-6 text-gold-400" />
-                <h2 className="text-lg md:text-3xl font-bold text-gray-900">Shop by Category</h2>
+      {(sellers.length > 0 || loadingSellers) && (
+        <div className="py-7 md:py-12 bg-white border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-5 md:mb-8">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Store className="w-5 h-5 md:w-6 md:h-6 text-gold-400" />
+                  <h2 className="text-lg md:text-3xl font-bold text-gray-900">Our Sellers</h2>
+                </div>
+                <div className="w-10 h-0.5 bg-gold-400 mt-1.5" />
               </div>
-              <div className="w-10 h-0.5 bg-gold-400 mt-1.5" />
+              {sellers.length > 0 && (
+                <button
+                  onClick={() => { navigate('/seller-list'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="text-xs md:text-sm text-gold-400 font-medium hover:underline flex items-center gap-1"
+                >
+                  View All <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+                </button>
+              )}
+            </div>
+
+            {loadingSellers ? (
+              <div className="flex gap-6 md:gap-10 overflow-x-auto scrollbar-hide pb-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2">
+                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gray-200 animate-pulse" />
+                    <div className="w-16 h-3 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-6 md:gap-10 overflow-x-auto scrollbar-hide pb-3 snap-x snap-mandatory -mx-4 px-4">
+                {displaySellers.map((seller, index) => {
+                  const sellerImage = seller.Image || seller.profileImage;
+                  const initials = seller.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'S';
+                  return (
+                    <motion.div
+                      key={seller._id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3, delay: index * 0.06 }}
+                      className="flex-shrink-0 snap-start flex flex-col items-center gap-2.5 cursor-pointer group"
+                      onClick={() => handleSellerClick(seller._id)}
+                    >
+                      <div className="relative">
+                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-[3px] border-gray-100 group-hover:border-gold-400 transition-all duration-300 shadow-md bg-gold-400/10 flex items-center justify-center">
+                          {sellerImage ? (
+                            <img
+                              src={sellerImage}
+                              alt={seller.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              loading="lazy"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <span className="text-gold-400 font-bold text-2xl md:text-3xl">{initials}</span>
+                          )}
+                        </div>
+                        <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 md:w-6 md:h-6 bg-green-400 rounded-full border-2 border-white" />
+                      </div>
+                      <p className="text-xs md:text-sm font-medium text-gray-800 text-center max-w-[96px] md:max-w-[128px] truncate group-hover:text-gold-400 transition-colors">
+                        {seller.companyName || seller.name}
+                      </p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="py-10 md:py-16 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-8 md:mb-10">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Grid className="w-5 h-5 md:w-6 md:h-6 text-gold-400" />
+                <h2 className="text-xl md:text-3xl font-bold text-gray-900">Shop by Category</h2>
+              </div>
+              <div className="w-12 h-0.5 bg-gold-400 mt-1.5" />
+              <p className="text-gray-500 text-sm mt-2">Browse our curated selection of premium categories</p>
             </div>
             {categories.length > 0 && (
-              <button onClick={handleShopNow} className="text-xs md:text-sm text-gold-400 font-medium hover:underline flex items-center gap-1">
+              <button onClick={handleShopNow} className="text-xs md:text-sm text-gold-400 font-medium hover:underline flex items-center gap-1 border border-gold-400/30 px-3 py-1.5 rounded-full hover:bg-gold-400/5 transition-all">
                 View All <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
               </button>
             )}
@@ -350,10 +491,10 @@ const Hero = ({ onShopNowClick = () => {} }) => {
           {loadingCategories ? (
             <>
               <div className="flex gap-3 md:hidden overflow-x-auto scrollbar-hide pb-2">
-                {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-28 h-36 bg-gray-200 rounded-xl animate-pulse" />)}
+                {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 h-48 bg-gray-200 rounded-2xl animate-pulse" />)}
               </div>
               <div className="hidden md:grid md:grid-cols-4 gap-5">
-                {[...Array(4)].map((_, i) => <div key={i} className="bg-gray-200 rounded-xl h-80 animate-pulse" />)}
+                {[...Array(4)].map((_, i) => <div key={i} className="bg-gray-200 rounded-2xl h-96 animate-pulse" />)}
               </div>
             </>
           ) : categories.length > 0 ? (
@@ -365,10 +506,10 @@ const Hero = ({ onShopNowClick = () => {} }) => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3, delay: index * 0.06 }}
-                    className="flex-shrink-0 w-28 snap-start cursor-pointer"
+                    className="flex-shrink-0 w-36 snap-start cursor-pointer"
                     onClick={() => handleCategoryClick(category._id)}
                   >
-                    <div className="relative rounded-xl overflow-hidden h-36 shadow-md active:scale-95 transition-transform duration-150">
+                    <div className="relative rounded-2xl overflow-hidden h-48 shadow-md active:scale-95 transition-transform duration-150 border border-gray-100">
                       <img
                         src={category.image || "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=300&h=300&fit=crop"}
                         alt={category.name}
@@ -376,9 +517,17 @@ const Hero = ({ onShopNowClick = () => {} }) => {
                         loading="lazy"
                         onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=300&h=300&fit=crop"; }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-2">
-                        <p className="text-white text-xs font-semibold leading-tight truncate">{category.name}</p>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                      <div className="absolute top-2 left-2">
+                        <div className="bg-gold-400/90 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                          <span className="text-black text-[10px] font-bold uppercase tracking-wide">{category.name}</span>
+                        </div>
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="text-white text-sm font-bold leading-tight">{category.name}</p>
+                        <p className="text-gold-400 text-xs mt-0.5 flex items-center gap-0.5">
+                          Shop <ArrowRight className="w-2.5 h-2.5" />
+                        </p>
                       </div>
                     </div>
                   </motion.div>
@@ -395,7 +544,7 @@ const Hero = ({ onShopNowClick = () => {} }) => {
                     className="group cursor-pointer"
                     onClick={() => handleCategoryClick(category._id)}
                   >
-                    <div className="relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <div className="relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
                       <div className="relative h-80 lg:h-96 overflow-hidden">
                         <img
                           src={category.image || "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=600&h=500&fit=crop"}
@@ -422,6 +571,44 @@ const Hero = ({ onShopNowClick = () => {} }) => {
                   </motion.div>
                 ))}
               </div>
+
+              {displayCategories.length > 4 && (
+                <div className="hidden md:grid md:grid-cols-2 gap-5 mt-5">
+                  {displayCategories.slice(4, 6).map((category, index) => (
+                    <motion.div
+                      key={category._id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: index * 0.1 }}
+                      className="group cursor-pointer"
+                      onClick={() => handleCategoryClick(category._id)}
+                    >
+                      <div className="relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 flex h-40">
+                        <div className="w-48 flex-shrink-0 overflow-hidden">
+                          <img
+                            src={category.image || "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=300&h=200&fit=crop"}
+                            alt={category.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="flex-1 p-5 flex flex-col justify-between bg-white">
+                          <div>
+                            <div className="inline-block bg-gold-400/10 px-2 py-0.5 rounded-full mb-2">
+                              <span className="text-gold-500 text-xs font-semibold uppercase tracking-wide">{category.name}</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">{category.name}</h3>
+                          </div>
+                          <div className="flex items-center text-gold-400 font-medium text-sm group-hover:gap-2 gap-1 transition-all">
+                            <span>Shop Now</span>
+                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-10">
@@ -432,24 +619,23 @@ const Hero = ({ onShopNowClick = () => {} }) => {
         </div>
       </div>
 
-      {/* Trending Products — below categories */}
       {(trendingProducts.length > 0 || loadingTrending) && (
-        <div className="py-7 md:py-12 bg-white border-t border-gray-100">
+        <div className="py-10 md:py-14 bg-white border-t border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-1">
                   <Zap className="w-5 h-5 text-gold-400" />
-                  <h2 className="text-lg md:text-2xl font-bold text-gray-900">Trending Now</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900">Trending Now</h2>
                 </div>
-                <div className="w-10 h-0.5 bg-gold-400 mt-1" />
+                <div className="w-12 h-0.5 bg-gold-400 mt-1" />
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 text-gold-400 bg-gold-400/10 px-2 py-1 rounded-full">
                   <Zap className="w-3 h-3" />
                   <span className="text-xs font-medium">HOT</span>
                 </div>
-                <button onClick={handleViewAllTrending} className="text-xs md:text-sm text-gold-400 font-medium hover:underline flex items-center gap-1">
+                <button onClick={handleViewAllTrending} className="text-xs md:text-sm text-gold-400 font-medium hover:underline flex items-center gap-1 border border-gold-400/30 px-3 py-1.5 rounded-full hover:bg-gold-400/5 transition-all">
                   View All <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
                 </button>
               </div>
@@ -457,11 +643,10 @@ const Hero = ({ onShopNowClick = () => {} }) => {
 
             {loadingTrending ? (
               <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-                {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-28 md:w-44 bg-gray-100 rounded-xl h-36 md:h-56 animate-pulse" />)}
+                {[...Array(5)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 md:w-48 bg-gray-100 rounded-2xl h-44 md:h-60 animate-pulse" />)}
               </div>
             ) : (
               <>
-                {/* Mobile: auto-sliding small cards */}
                 <div
                   ref={trendingScrollRef}
                   className="flex gap-3 md:hidden overflow-x-auto scrollbar-hide pb-3 snap-x snap-mandatory -mx-4 px-4"
@@ -474,10 +659,10 @@ const Hero = ({ onShopNowClick = () => {} }) => {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="flex-shrink-0 w-28 snap-start cursor-pointer"
+                        className="flex-shrink-0 w-36 snap-start cursor-pointer"
                         onClick={() => handleProductClick(product._id)}
                       >
-                        <div className="relative rounded-xl overflow-hidden h-36 shadow-md active:scale-95 transition-transform duration-150">
+                        <div className="relative rounded-2xl overflow-hidden h-44 shadow-md active:scale-95 transition-transform duration-150 border border-gray-100">
                           <img
                             src={imgSrc}
                             alt={product.name}
@@ -486,15 +671,15 @@ const Hero = ({ onShopNowClick = () => {} }) => {
                             onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=300&h=300&fit=crop"; }}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                          <div className="absolute top-1.5 right-1.5">
-                            <div className="bg-gold-400 rounded-full w-5 h-5 flex items-center justify-center">
-                              <Zap className="w-2.5 h-2.5 text-black" />
+                          <div className="absolute top-2 right-2">
+                            <div className="bg-gold-400 rounded-full w-6 h-6 flex items-center justify-center">
+                              <Zap className="w-3 h-3 text-black" />
                             </div>
                           </div>
-                          <div className="absolute bottom-0 left-0 right-0 p-2">
+                          <div className="absolute bottom-0 left-0 right-0 p-3">
                             <p className="text-white text-xs font-semibold leading-tight line-clamp-1">{product.name}</p>
                             {product.price && (
-                              <p className="text-gold-400 text-xs font-bold mt-0.5">${product.price}</p>
+                              <p className="text-gold-400 text-sm font-bold mt-0.5">${product.price}</p>
                             )}
                           </div>
                         </div>
@@ -503,7 +688,6 @@ const Hero = ({ onShopNowClick = () => {} }) => {
                   })}
                 </div>
 
-                {/* Dot indicators for auto-slide */}
                 {isMobile && trendingProducts.length > 0 && (
                   <div className="flex justify-center gap-1 mt-2.5 md:hidden">
                     {trendingProducts.map((_, i) => (
@@ -515,7 +699,6 @@ const Hero = ({ onShopNowClick = () => {} }) => {
                   </div>
                 )}
 
-                {/* Desktop: existing carousel component */}
                 <div className="hidden md:block">
                   <TrendingCarousel products={trendingProducts} />
                 </div>
@@ -525,32 +708,31 @@ const Hero = ({ onShopNowClick = () => {} }) => {
         </div>
       )}
 
-      {/* Why Choose FBB */}
-      <div className="py-7 md:py-12 bg-gray-50 border-t border-gray-100">
+      <div className="py-10 md:py-14 bg-gray-50 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-5 md:mb-8">
-            <h2 className="text-lg md:text-2xl font-bold text-gray-900">Why Choose FBB</h2>
-            <div className="w-10 h-0.5 bg-gold-400 mx-auto mt-2" />
+          <div className="text-center mb-8 md:mb-10">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">Why Choose FBB</h2>
+            <div className="w-12 h-0.5 bg-gold-400 mx-auto mt-2 mb-1" />
+            <p className="text-gray-500 text-sm">Premium experience, every step of the way</p>
           </div>
-          <div className="flex md:grid md:grid-cols-4 gap-3 md:gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory -mx-4 md:mx-0 px-4 md:px-0">
+          <div className="flex md:grid md:grid-cols-4 gap-4 md:gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory -mx-4 md:mx-0 px-4 md:px-0">
             {features.map((feature, index) => (
-              <div key={index} className="flex-shrink-0 w-40 md:w-auto snap-start text-center p-4 bg-white md:bg-transparent rounded-xl shadow-sm md:shadow-none">
-                <div className="w-10 h-10 rounded-full bg-gold-400/10 flex items-center justify-center text-gold-400 mx-auto mb-2">
+              <div key={index} className="flex-shrink-0 w-48 md:w-auto snap-start text-center p-5 bg-white md:bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-gold-400/30 hover:shadow-md transition-all duration-300">
+                <div className="w-12 h-12 rounded-2xl bg-gold-400/10 flex items-center justify-center text-gold-400 mx-auto mb-3">
                   {feature.icon}
                 </div>
-                <h3 className="text-xs md:text-sm font-semibold text-gray-900 mb-1">{feature.title}</h3>
-                <p className="text-gray-500 text-xs">{feature.description}</p>
+                <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-1">{feature.title}</h3>
+                <p className="text-gray-500 text-xs md:text-sm">{feature.description}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Banner Slider — desktop only */}
-      <div className="hidden md:block relative py-10 bg-gray-900">
+      <div className="hidden md:block relative py-12 bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-6 items-center">
-            <div className="relative h-[300px] md:h-[350px] rounded-xl overflow-hidden">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="relative h-[320px] md:h-[380px] rounded-2xl overflow-hidden">
               <AnimatePresence initial={false}>
                 <motion.div
                   key={currentBannerIndex}
@@ -564,21 +746,22 @@ const Hero = ({ onShopNowClick = () => {} }) => {
                   <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
                 </motion.div>
               </AnimatePresence>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2">
-                <button onClick={prevBannerSlide} className="p-1.5 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                <button onClick={prevBannerSlide} className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all">
                   <ChevronLeft className="w-4 h-4 text-white" />
                 </button>
-                <button onClick={nextBannerSlide} className="p-1.5 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all">
+                <button onClick={nextBannerSlide} className="p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all">
                   <ChevronRight className="w-4 h-4 text-white" />
                 </button>
               </div>
             </div>
             <AnimatePresence mode="wait">
               <motion.div key={currentBannerIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.5 }}>
-                <h3 className="text-xl md:text-2xl font-bold text-white mb-2">{bannerSlides[currentBannerIndex].title}</h3>
-                <p className="text-gray-300 mb-4 text-sm md:text-base">{bannerSlides[currentBannerIndex].description}</p>
-                <button onClick={handleShopNow} className="text-gold-400 font-medium flex items-center gap-2 text-sm hover:gap-3 transition-all">
-                  Explore Collection <ArrowRight className="w-4 h-4" />
+                <div className="w-12 h-0.5 bg-gold-400 mb-4" />
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">{bannerSlides[currentBannerIndex].title}</h3>
+                <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed">{bannerSlides[currentBannerIndex].description}</p>
+                <button onClick={handleShopNow} className="text-gold-400 font-medium flex items-center gap-2 text-sm hover:gap-4 transition-all group">
+                  Explore Collection <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </motion.div>
             </AnimatePresence>
@@ -586,26 +769,25 @@ const Hero = ({ onShopNowClick = () => {} }) => {
         </div>
       </div>
 
-      {/* Testimonials */}
-      <div className="py-7 md:py-12 bg-white">
+      <div className="py-10 md:py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-5">
-            <Heart className="w-6 h-6 text-gold-400 mx-auto mb-1.5" />
-            <h2 className="text-lg md:text-2xl font-bold text-gray-900">Customer Stories</h2>
-            <div className="w-10 h-0.5 bg-gold-400 mx-auto mt-2" />
+          <div className="text-center mb-8">
+            <Heart className="w-7 h-7 text-gold-400 mx-auto mb-2" />
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">Customer Stories</h2>
+            <div className="w-12 h-0.5 bg-gold-400 mx-auto mt-2" />
           </div>
           <div
             ref={testimonialsScrollRef}
-            className="flex md:grid md:grid-cols-3 gap-3 md:gap-4 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory -mx-4 md:mx-0 px-4 md:px-0"
+            className="flex md:grid md:grid-cols-3 gap-4 md:gap-6 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory -mx-4 md:mx-0 px-4 md:px-0"
           >
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="flex-shrink-0 w-[72vw] sm:w-72 md:w-auto snap-start bg-gray-50 p-4 rounded-xl shadow-sm">
-                <div className="flex mb-2">
-                  {[...Array(testimonial.rating)].map((_, i) => <RiStarFill key={i} className="text-gold-400 w-3.5 h-3.5" />)}
+              <div key={index} className="flex-shrink-0 w-[75vw] sm:w-72 md:w-auto snap-start bg-gray-50 p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 hover:border-gold-400/20 hover:shadow-md transition-all duration-300">
+                <div className="flex mb-3">
+                  {[...Array(testimonial.rating)].map((_, i) => <RiStarFill key={i} className="text-gold-400 w-4 h-4" />)}
                 </div>
-                <p className="text-gray-600 italic text-sm mb-3">"{testimonial.content}"</p>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gold-400/10 flex items-center justify-center text-gold-400 font-bold text-sm flex-shrink-0">
+                <p className="text-gray-600 italic text-sm md:text-base mb-4 leading-relaxed">"{testimonial.content}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gold-400/10 flex items-center justify-center text-gold-400 font-bold text-sm flex-shrink-0">
                     {testimonial.name.charAt(0)}
                   </div>
                   <div>
@@ -619,21 +801,20 @@ const Hero = ({ onShopNowClick = () => {} }) => {
         </div>
       </div>
 
-      {/* Newsletter CTA */}
-      <div className="relative py-10 md:py-14 overflow-hidden">
+      <div className="relative py-12 md:py-16 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
         <div className="relative z-10 max-w-xl mx-auto px-4 text-center">
-          <Sparkles className="w-7 h-7 md:w-9 md:h-9 text-gold-400 mx-auto mb-2.5" />
-          <h2 className="text-lg md:text-3xl font-bold text-white mb-1.5">Join Our Community</h2>
-          <div className="w-10 h-0.5 bg-gold-400 mx-auto mb-3" />
-          <p className="text-gray-300 mb-5 text-sm md:text-base">Get exclusive previews and special offers</p>
+          <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-gold-400 mx-auto mb-3" />
+          <h2 className="text-xl md:text-3xl font-bold text-white mb-2">Join Our Community</h2>
+          <div className="w-12 h-0.5 bg-gold-400 mx-auto mb-3" />
+          <p className="text-gray-300 mb-6 text-sm md:text-base">Get exclusive previews and special offers</p>
           <div className="flex flex-col sm:flex-row gap-2 max-w-sm mx-auto">
             <input
               type="email"
               placeholder="Your email address"
-              className="flex-grow px-4 py-2.5 bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+              className="flex-grow px-4 py-3 bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl text-white placeholder-gray-400 text-sm focus:outline-none focus:border-gold-400 transition-colors"
             />
-            <button className="px-5 py-2.5 bg-gold-400 text-black font-bold rounded-lg text-sm hover:bg-gold-500 transition-colors whitespace-nowrap">
+            <button className="px-6 py-3 bg-gold-400 text-black font-bold rounded-xl text-sm hover:bg-gold-500 transition-colors whitespace-nowrap">
               SUBSCRIBE
             </button>
           </div>
@@ -655,19 +836,9 @@ const Hero = ({ onShopNowClick = () => {} }) => {
       </AnimatePresence>
 
       <style>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .line-clamp-1 {
-          display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
     </div>
   );
