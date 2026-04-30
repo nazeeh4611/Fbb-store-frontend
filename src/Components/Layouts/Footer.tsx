@@ -105,16 +105,16 @@ export default function Footer() {
             <div className="space-y-2.5">
               <div className="flex items-start space-x-3">
                 <MapPin className="w-4 h-4 text-gold-400 mt-0.5 flex-shrink-0" />
-                <span className="text-sm text-gray-300">Calicut Road, Malappuram, Kerala 676552</span>
+                <span className="text-sm text-gray-300">Bilathikulam Road, Nadakavu, Kozhikode - 673011, Kerala</span>
               </div>
-              <div className="flex items-center space-x-3">
+              <a href="mailto:flybuybrand26@gmail.com" className="flex items-center space-x-3 group">
                 <Mail className="w-4 h-4 text-gold-400 flex-shrink-0" />
-                <span className="text-sm text-gray-300">fbbstore1@gmail.com</span>
-              </div>
-              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-300 group-hover:text-gold-400 transition-colors">flybuybrand26@gmail.com</span>
+              </a>
+              <a href="tel:+919833023277" className="flex items-center space-x-3 group">
                 <Phone className="w-4 h-4 text-gold-400 flex-shrink-0" />
-                <span className="text-sm text-gray-300">+91 7012551507</span>
-              </div>
+                <span className="text-sm text-gray-300 group-hover:text-gold-400 transition-colors">+91 98330 23277</span>
+              </a>
             </div>
             <div className="flex space-x-4">
               <a href="https://www.instagram.com/fbb_store_?igsh=NWU0c2RpbW95a3Ro" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gold-400 transition-colors">
@@ -187,14 +187,14 @@ export default function Footer() {
           <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-800">
             <div>
               <div className="text-xl font-bold tracking-wider mb-1">FBB LUXURY</div>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
+              <a href="mailto:flybuybrand26@gmail.com" className="flex items-center gap-2 text-xs text-gray-400 hover:text-gold-400 transition-colors">
                 <Mail className="w-3 h-3 text-gold-400" />
-                <span>fbbstore1@gmail.com</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                <span>flybuybrand26@gmail.com</span>
+              </a>
+              <a href="tel:+919833023277" className="flex items-center gap-2 text-xs text-gray-400 hover:text-gold-400 transition-colors mt-1">
                 <Phone className="w-3 h-3 text-gold-400" />
-                <span>+91 7012551507</span>
-              </div>
+                <span>+91 98330 23277</span>
+              </a>
             </div>
             <div className="flex flex-col gap-2">
               <a href="https://www.instagram.com/fbb_store_?igsh=NWU0c2RpbW95a3Ro" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gold-400 transition-colors">
@@ -248,7 +248,7 @@ export default function Footer() {
           {/* Address mobile */}
           <div className="mt-4 pt-4 border-t border-gray-800 flex items-start gap-2 text-xs text-gray-400">
             <MapPin className="w-3.5 h-3.5 text-gold-400 mt-0.5 flex-shrink-0" />
-            <span>Calicut Road, Malappuram, Kerala 676552</span>
+            <span>Bilathikulam Road, Nadakavu, Kozhikode - 673011, Kerala</span>
           </div>
         </div>
       </div>

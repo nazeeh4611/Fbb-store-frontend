@@ -225,7 +225,7 @@ const AboutPage = () => {
                 <div className="md:col-span-1 bg-gray-900 p-8 flex flex-col items-center justify-center">
                   <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-gold-400 mb-6">
                     <img
-                      src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop&auto=format&q=80"
+                      src="/murshid.avif"
                       alt={ceoInfo.name}
                       className="w-full h-full object-cover"
                     />
