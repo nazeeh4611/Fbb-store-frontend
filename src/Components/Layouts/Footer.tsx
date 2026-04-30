@@ -100,7 +100,7 @@ export default function Footer() {
           <div className="space-y-5">
             <div className="text-2xl font-bold tracking-wider">FBB LUXURY</div>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Redefining luxury fashion since 2010. We curate the finest collections from world-renowned designers.
+              Redefining luxury fashion since 2020. We curate the finest collections from world-renowned designers.
             </p>
             <div className="space-y-2.5">
               <div className="flex items-start space-x-3">
