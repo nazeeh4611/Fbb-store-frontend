@@ -1,4 +1,4 @@
-import { MapPin, Phone,  Clock, MessageSquare, Send, Sparkles } from "lucide-react"
+import { MapPin, Phone, Clock, MessageSquare, Send, Sparkles } from "lucide-react"
 import Footer from "../Layouts/Footer"
 import NavBar from "../Layouts/Navbar"
 import { motion } from "framer-motion"
@@ -17,30 +17,30 @@ const ContactPage = () => {
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
 
   const contactInfo = {
-    address: "Nooras Tower, near Supplyco, Chettipadi, Kerala 676319",
-    phone: "+91 90612 56500",
-    email: "fbbstore1@gmail.com",
+    address: "Bilathikulam Road, Nadakavu, Kozhikode - 673011, Kerala",
+    phone: "+91 98330 23277",
+    email: "flybuybrand26@gmail.com",
     hours: "Mon-Sat: 9:00 AM - 8:00 PM",
-    whatsapp: "+91 90612 56500"
+    whatsapp: "+91 98330 23277"
   }
 
   const departments = [
     {
       name: "Customer Support",
       description: "For order inquiries, returns, and general assistance",
-      email: "support@fbbstore.com",
+      email: "flybuybrand26@gmail.com",
       response: "Within 24 hours"
     },
     {
       name: "Sales & Wholesale",
       description: "For bulk orders and partnership inquiries",
-      email: "sales@fbbstore.com",
+      email: "flybuybrand26@gmail.com",
       response: "Within 48 hours"
     },
     {
       name: "Careers",
       description: "Join our team and grow with us",
-      email: "careers@fbbstore.com",
+      email: "flybuybrand26@gmail.com",
       response: "Within 72 hours"
     }
   ]
@@ -57,7 +57,6 @@ const ContactPage = () => {
     setIsSubmitting(true)
     
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500))
       setSubmitStatus("success")
       setFormData({
@@ -154,7 +153,9 @@ const ContactPage = () => {
                   <Phone className="w-6 h-6" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Call Us</h3>
-                <p className="text-gray-600">{contactInfo.phone}</p>
+                <a href={`tel:${contactInfo.phone.replace(/\s/g, '')}`} className="text-gray-600 hover:text-gold-400 transition-colors block">
+                  {contactInfo.phone}
+                </a>
                 <button
                   onClick={handleWhatsApp}
                   className="mt-3 inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium"
@@ -250,7 +251,7 @@ const ContactPage = () => {
                           value={formData.phone}
                           onChange={handleChange}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-400 focus:border-transparent"
-                          placeholder="+91 12345 67890"
+                          placeholder="+91 98330 23277"
                         />
                       </div>
                       <div>
@@ -355,7 +356,7 @@ const ContactPage = () => {
             <div className="bg-white p-4 rounded-xl shadow-lg">
               <div className="aspect-video rounded-lg overflow-hidden">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3917.119256424282!2d76.2076895!3d10.9615486!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba7b9e5d5a5b5b5%3A0x5b5b5b5b5b5b5b5b!2sNooras%20Tower%2C%20Chettipadi%2C%20Kerala%20676319!5e0!3m2!1sen!2sin!4v1621234567890!5m2!1sen!2sin"
+                  src={`https://www.google.com/maps?q=${encodeURIComponent(contactInfo.address)}&output=embed`}
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
