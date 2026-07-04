@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { PlusCircle, X, Upload, Edit2, Search, ChevronLeft, ChevronRight, Trash2, Film, Image, Package, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { baseurl } from '../../Constant/Base';
@@ -257,10 +259,17 @@ const SellerProductPage = () => {
     showSEO: true,
   });
 
-  const api = axios.create({ baseURL: baseurl });
-  const [seller, setSeller] = useState<Seller>({ name: '', status: false });
   const token = useGetToken('sellerToken');
   const sellerId = ExtractToken(token);
+
+  const api = axios.create({
+    baseURL: baseurl,
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  const [seller, setSeller] = useState<Seller>({ name: '', status: false });
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
 
   const hasSpecificationsTab = fieldConfig.showSpecifications || fieldConfig.showColors || fieldConfig.showSizes || fieldConfig.showMaterial || fieldConfig.showWeight || fieldConfig.showDimensions || fieldConfig.showWarranty;
@@ -706,14 +715,24 @@ const SellerProductPage = () => {
       fd.append('shippingCost', formData.shippingCost);
       if (fieldConfig.showSEO) { fd.append('metaTitle', formData.metaTitle); fd.append('metaDescription', formData.metaDescription); fd.append('metaKeywords', formData.metaKeywords); }
       fd.append('sellerId', sellerId.userId);
-      fd.append('existingImages', JSON.stringify(formData.existingImages.filter((url) => url !== '')));
-      fd.append('existingVideos', JSON.stringify(formData.existingVideos.filter((url) => url !== '')));
-      let imageCount = 0;
-      let videoCount = 0;
-      formData.mediaFiles.forEach((media) => {
+      const existingImagesObj: Record<string, string> = {};
+      formData.existingImages.forEach((url, idx) => {
+        if (url) existingImagesObj[`image${idx + 1}`] = url;
+      });
+      const existingVideosObj: Record<string, string> = {};
+      formData.existingVideos.forEach((url, idx) => {
+        if (url) existingVideosObj[`video${idx + 1}`] = url;
+      });
+      fd.append('existingImages', JSON.stringify(existingImagesObj));
+      fd.append('existingVideos', JSON.stringify(existingVideosObj));
+
+      formData.mediaFiles.forEach((media, index) => {
         if (media.file) {
-          if (media.type === 'image') { fd.append(`image${imageCount + 1}`, media.file); imageCount++; }
-          else { fd.append(`video${videoCount + 1}`, media.file); videoCount++; }
+          if (media.type === 'image') {
+            fd.append(`image${index + 1}`, media.file);
+          } else {
+            fd.append(`video${index + 1}`, media.file);
+          }
         }
       });
       if (editingProduct) await api.put(`/seller/edit-product/${editingProduct}`, fd);
