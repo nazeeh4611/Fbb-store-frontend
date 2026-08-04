@@ -288,18 +288,18 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
 
   const removeFromCart = async (cartItemId: string) => {
     setUpdatingCartItem(cartItemId);
-    
+
     const removedItem = cartItems.find(item => item._id === cartItemId);
     const itemQuantity = removedItem?.quantity || 1;
     const itemPrice = removedItem?.price || 0;
-    
+
     setCartItems(prev => prev.filter(item => item._id !== cartItemId));
     setCartCount(prev => prev - itemQuantity);
     setCartTotal(prev => prev - (itemPrice * itemQuantity));
 
     try {
       const token = localStorage.getItem('token');
-      await api.delete(`/cart/cart/remove/${cartItemId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      await api.delete(`/cart/remove/${cartItemId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       await fetchCartData(false);
     } catch (error) {
       console.error('Error removing from cart:', error);
@@ -310,14 +310,14 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   };
 
   const updateCartQuantity = async (cartItemId: string, newQuantity: number) => {
-    setUpdatingCartItem(cartItemId);
-    
     const currentItem = cartItems.find(item => item._id === cartItemId);
     if (!currentItem) return;
-    
+
+    setUpdatingCartItem(cartItemId);
+
     const oldQuantity = currentItem.quantity;
     const diff = newQuantity - oldQuantity;
-    
+
     setCartItems(prev =>
       prev.map(item => item._id === cartItemId ? { ...item, quantity: newQuantity } : item)
     );
@@ -326,7 +326,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
 
     try {
       const token = localStorage.getItem('token');
-      await api.put('/cart/cart/update', { cartItemId, quantity: newQuantity }, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      await api.put('/cart/update', { cartItemId, quantity: newQuantity }, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       await fetchCartData(false);
     } catch (error) {
       console.error('Error updating cart:', error);
@@ -495,8 +495,8 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
                         <span className="font-bold text-gray-900 text-sm">₹{(item.price * item.quantity).toLocaleString()}</span>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => removeFromCart(item._id)} 
+                    <button
+                      onClick={() => removeFromCart(item._id)}
                       disabled={isUpdating}
                       className="text-gray-300 hover:text-red-500 transition-colors mt-1 disabled:opacity-50"
                     >

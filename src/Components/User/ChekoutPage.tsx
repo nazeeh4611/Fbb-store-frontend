@@ -207,7 +207,7 @@ const CheckoutPage = () => {
           }
 
           const options = {
-            key: "rzp_test_Rgm99jMXnxSkGK",
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID || '',
             amount: response.data.razorpayOrder.amount,
             currency: response.data.razorpayOrder.currency,
             name: "Your Store Name",
