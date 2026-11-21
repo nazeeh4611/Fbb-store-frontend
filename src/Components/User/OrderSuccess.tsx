@@ -4,9 +4,8 @@ import { CheckCircle, ShoppingBag, Home, Package, Truck, Clock, ChevronRight } f
 import NavBar from '../Layouts/Navbar';
 import Footer from '../Layouts/Footer';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
-import { baseurl } from '../../Constant/Base';
 
+import api from '../../lib/api';
 interface OrderItem {
   product: {
     _id: string;
@@ -48,9 +47,6 @@ const OrderSuccess = () => {
   const { orderId } = location.state || {};
 
   const token = localStorage.getItem('token');
-  const api = axios.create({
-    baseURL: baseurl,
-  });
 
   useEffect(() => {
     if (orderId) {
@@ -121,7 +117,6 @@ const OrderSuccess = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <NavBar />
-      <div className="h-[80px]"></div>
       
       <main className="flex-grow pb-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

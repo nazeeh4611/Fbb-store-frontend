@@ -1,9 +1,7 @@
 import React, { useState, useEffect, ChangeEvent } from 'react'
-import axios from 'axios'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
-import { baseurl } from '../../Constant/Base'
 import { useGetToken } from '../../Token/getToken'
 import { SellerLayout } from './SellerLayout'
 import {
@@ -20,6 +18,7 @@ import {
   Legend
 } from 'recharts'
 
+import api from '../../lib/api';
 interface SalesDataPoint {
   date: string
   sales: number
@@ -68,7 +67,7 @@ const SalesReportPage: React.FC = () => {
   const fetchReportData = async () => {
     try {
       setLoading(true)
-      const response = await axios.get(`${baseurl}/seller/sales-report?range=${timeRange}`, {
+      const response = await api.get(`/seller/sales-report?range=${timeRange}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
 

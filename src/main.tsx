@@ -1,12 +1,14 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import { GoogleOAuthProvider } from '@react-oauth/google';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import { warmUpBackend } from "./lib/api";
+import "./index.css";
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+// Start waking the API (free-tier hosts sleep) while the UI is still loading.
+warmUpBackend();
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID_HERE">
-      <App />
-    </GoogleOAuthProvider>
+    <App />
   </React.StrictMode>
 );

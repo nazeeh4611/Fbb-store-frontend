@@ -3,10 +3,11 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Footer from "../Layouts/Footer"
 import NavBar from "../Layouts/Navbar"
-import { baseurl } from "../../Constant/Base"
-import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
 
+import { toast } from 'react-hot-toast';
+import api, { errorMessage } from '../../lib/api';
+import { effectivePrice, formatINR } from '../../lib/format';
 interface Category {
   _id: string;
   name: string;
@@ -50,6 +51,7 @@ interface Product {
   updatedAt: string;
   rating?: number;
   reviews?: number;
+  salePrice?: number;
   active: boolean;
   description?: string;
   discount?: number;
@@ -89,9 +91,7 @@ export default function ShopLayout(): JSX.Element {
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasFetchedRef = useRef(false)
 
-  const api = useMemo(() => axios.create({ baseURL: baseurl }), [])
-
-  const [favorites, setFavorites] = useState<{ [key: string]: boolean }>({})
+const [favorites, setFavorites] = useState<{ [key: string]: boolean }>({})
   const [visibleProducts, setVisibleProducts] = useState<number>(8)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [allProducts, setAllProducts] = useState<Product[]>([])
@@ -133,9 +133,19 @@ export default function ShopLayout(): JSX.Element {
     return () => { document.body.style.overflow = 'unset' }
   }, [showMobileSidebar])
 
-  const toggleFavorite = useCallback((productName: string): void => {
-    setFavorites(prev => ({ ...prev, [productName]: !prev[productName] }))
-  }, [])
+  const toggleFavorite = useCallback(async (productId: string): Promise<void> => {
+    const willAdd = !favorites[productId]
+    setFavorites(prev => ({ ...prev, [productId]: willAdd }))
+    try {
+      if (willAdd) await api.post('/wishlist/add', { productId })
+      else await api.delete(`/wishlist/remove/${productId}`)
+      window.dispatchEvent(new CustomEvent('wishlist:updated'))
+      toast.success(willAdd ? 'Added to wishlist' : 'Removed from wishlist')
+    } catch (err) {
+      setFavorites(prev => ({ ...prev, [productId]: !willAdd }))
+      toast.error(errorMessage(err, 'Could not update wishlist'))
+    }
+  }, [favorites])
 
   const handleProductClick = useCallback((productId: string): void => {
     navigate(`/product/${productId}`)
@@ -155,14 +165,19 @@ export default function ShopLayout(): JSX.Element {
 
       const response = await api.get<ApiResponse>('/get-product', { params: queryParams })
       if (response.data?.products) {
-        const enriched = response.data.products.map((p: Product) => ({
-          ...p,
-          description: p.description || "Premium quality product crafted with attention to detail.",
-          discount: p.discount || Math.floor(Math.random() * 40) + 5,
-          rating: p.rating || 3.5 + Math.random() * 1.5,
-          reviews: p.reviews || Math.floor(Math.random() * 200) + 10,
-          stock: p.stock || Math.floor(Math.random() * 50) + 1,
-        }))
+        // Real data only: no invented ratings, discounts or stock.
+        const enriched = response.data.products.map((raw: any) => {
+          const { price, percentOff } = effectivePrice(raw)
+          return {
+            ...raw,
+            description: raw.shortDescription || raw.description || "",
+            discount: percentOff,
+            salePrice: price,
+            rating: raw.rating?.average || 0,
+            reviews: raw.rating?.count || 0,
+            stock: typeof raw.stock === "number" ? raw.stock : 0,
+          } as Product
+        })
         setAllProducts(enriched)
         setTotalProducts(enriched.length)
       } else {
@@ -434,14 +449,17 @@ export default function ShopLayout(): JSX.Element {
     setVisibleProducts(prev => Math.min(prev + 8, filteredProducts.length))
   }, [filteredProducts.length])
 
-  const renderRatingStars = useCallback((rating: number = 0): JSX.Element => (
-    <div className="flex items-center gap-0.5">
-      {[...Array(5)].map((_, i) => (
-        <Star key={i} className={`h-3 w-3 ${i < Math.floor(rating) ? "fill-yellow-400 text-yellow-400" : "fill-gray-200 text-gray-200"}`} />
-      ))}
-      <span className="ml-1 text-xs text-gray-500">({Math.floor(rating * 20) + 10})</span>
-    </div>
-  ), [])
+  const renderRatingStars = useCallback((rating: number = 0, count: number = 0): JSX.Element | null => {
+    if (!count) return null
+    return (
+      <div className="flex items-center gap-0.5">
+        {[...Array(5)].map((_, i) => (
+          <Star key={i} className={`h-3 w-3 ${i < Math.round(rating) ? "fill-yellow-400 text-yellow-400" : "fill-gray-200 text-gray-200"}`} />
+        ))}
+        <span className="ml-1 text-xs text-gray-500">({count})</span>
+      </div>
+    )
+  }, [])
 
   const currentTitle = useMemo((): string => {
     if (selectedSellerName) return selectedSellerName
@@ -874,27 +892,30 @@ export default function ShopLayout(): JSX.Element {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
                       />
-                      {product.discount && product.discount > 0 && (
+                      {!!product.discount && product.discount > 0 && (
                         <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-md">-{product.discount}%</div>
                       )}
                       <button
-                        onClick={e => { e.stopPropagation(); toggleFavorite(product.name) }}
+                        onClick={e => { e.stopPropagation(); toggleFavorite(product._id) }}
                         className="absolute top-2 right-2 w-7 h-7 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center z-10 hover:bg-white transition-colors"
                       >
-                        <Heart className={`h-4 w-4 transition-colors ${favorites[product.name] ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
+                        <Heart className={`h-4 w-4 transition-colors ${favorites[product._id] ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
                       </button>
                     </div>
                     <div className="p-3">
                       <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">{product.name}</h3>
                       <p className="text-xs text-gray-500 mb-2">{product.brand}</p>
-                      {renderRatingStars(product.rating || 4)}
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="text-base font-bold text-gray-900">₹{product.priceINR.toLocaleString()}</div>
-                        {product.stock && product.stock > 0 ? (
-                          <span className="text-xs text-green-600">In stock</span>
-                        ) : (
-                          <span className="text-xs text-red-500">Out of stock</span>
-                        )}
+                      {renderRatingStars(product.rating, product.reviews)}
+                      <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                          <span className="text-base font-bold text-gray-900">{formatINR(product.salePrice ?? product.priceINR)}</span>
+                          {product.discount ? <span className="text-xs text-gray-400 line-through">{formatINR(product.priceINR)}</span> : null}
+                        </div>
+                        {!product.stock || product.stock <= 0 ? (
+                          <span className="text-xs font-medium text-red-500 whitespace-nowrap">Out of stock</span>
+                        ) : product.stock <= 5 ? (
+                          <span className="text-xs font-medium text-amber-600 whitespace-nowrap">Only {product.stock} left</span>
+                        ) : null}
                       </div>
                     </div>
                   </motion.div>
@@ -910,7 +931,7 @@ export default function ShopLayout(): JSX.Element {
                   >
                     <div className="w-full sm:w-36 h-36 flex-shrink-0 relative bg-gray-100">
                       <img src={product.images?.image1 || "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200&h=200&fit=crop"} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
-                      {product.discount && product.discount > 0 && (
+                      {!!product.discount && product.discount > 0 && (
                         <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-md">-{product.discount}%</div>
                       )}
                     </div>
@@ -921,14 +942,17 @@ export default function ShopLayout(): JSX.Element {
                           <p className="text-xs text-gray-500 mb-2">{product.brand}</p>
                           <p className="text-sm text-gray-600 line-clamp-2 hidden sm:block">{product.description}</p>
                         </div>
-                        <button onClick={e => { e.stopPropagation(); toggleFavorite(product.name) }}>
-                          <Heart className={`h-5 w-5 transition-colors ${favorites[product.name] ? "fill-red-500 text-red-500" : "text-gray-400"}`} />
+                        <button onClick={e => { e.stopPropagation(); toggleFavorite(product._id) }}>
+                          <Heart className={`h-5 w-5 transition-colors ${favorites[product._id] ? "fill-red-500 text-red-500" : "text-gray-400"}`} />
                         </button>
                       </div>
                       <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
                         <div className="flex items-center gap-3">
-                          <div className="text-lg font-bold text-gray-900">₹{product.priceINR.toLocaleString()}</div>
-                          {renderRatingStars(product.rating || 4)}
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-lg font-bold text-gray-900">{formatINR(product.salePrice ?? product.priceINR)}</span>
+                            {product.discount ? <span className="text-sm text-gray-400 line-through">{formatINR(product.priceINR)}</span> : null}
+                          </div>
+                          {renderRatingStars(product.rating, product.reviews)}
                         </div>
                         <button className="px-4 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm flex items-center gap-1">
                           <Eye className="w-3.5 h-3.5" /> View

@@ -3,14 +3,14 @@ import { Button } from "../Layouts/button"
 import { ChevronLeft, ChevronRight, Heart, Share2, ShoppingBag, Truck, Shield, Play, Star, Globe, CheckCircle, ArrowRight, Sparkles, Tag, Scale, Ruler, Palette, Diamond, Hash, Percent, MapPin } from "lucide-react"
 import { cn } from "../../lib/util"
 import { useParams, Link } from "react-router-dom"
-import axios from "axios"
-import { baseurl } from "../../Constant/Base"
 import NavBar from "../Layouts/Navbar"
 import Footer from "../Layouts/Footer"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "react-hot-toast"
 import { Phone, Mail } from "lucide-react"
 
+import api from '../../lib/api';
+import { effectivePrice } from '../../lib/format';
 interface ProductImages {
   image1: string
   image2: string
@@ -92,6 +92,7 @@ interface ProductData {
 }
 
 interface Seller {
+  _id: string
   name: string
   DXB: string
   INR: string
@@ -218,7 +219,8 @@ const ImageMagnifier = ({ media, currentIndex, productName }: ImageMagnifierProp
   )
 }
 
-const RatingStars = ({ rating = 0 }: { rating: number }) => {
+const RatingStars = ({ rating = 0, count = 0 }: { rating: number; count?: number }) => {
+  if (!count) return <span className="text-sm text-gray-500">No reviews yet</span>
   return (
     <div className="flex items-center gap-1">
       {[...Array(5)].map((_, i) => (
@@ -230,7 +232,7 @@ const RatingStars = ({ rating = 0 }: { rating: number }) => {
         />
       ))}
       <span className="ml-2 text-sm font-medium text-gray-700">{rating.toFixed(1)}</span>
-      <span className="text-sm text-gray-500">({Math.floor(Math.random() * 500) + 100} reviews)</span>
+      <span className="text-sm text-gray-500">({count} {count === 1 ? "review" : "reviews"})</span>
     </div>
   )
 }
@@ -265,8 +267,7 @@ export default function ProductPage() {
     AE: productData?.seller.DXB,
   }
 
-  const api = axios.create({ baseURL: baseurl })
-  const token = localStorage.getItem("token")
+const token = localStorage.getItem("token")
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 100)
@@ -303,7 +304,7 @@ export default function ProductPage() {
   const getRelated = async () => {
     try {
       const category = productData?.subCategoryId?._id
-      const seller = productData?.seller?.name
+      const seller = productData?.seller?._id
       const response = await api.get(`/get-related/${seller}/${category}`)
       setRelatedProducts(response.data.products || [])
     } catch (error) {
@@ -433,14 +434,8 @@ export default function ProductPage() {
 
   const calculateDiscountPrice = (): number | null => {
     if (!productData || !hasValidDiscount()) return null
-    const { percentage, amount } = productData.discount
-    const basePrice = selectedCurrency === "AED" ? productData.priceAED : productData.priceINR
-    if (percentage > 0) return basePrice * (1 - percentage / 100)
-    if (amount > 0) {
-      const amountInSelectedCurrency = selectedCurrency === "AED" ? amount : amount
-      return basePrice - amountInSelectedCurrency
-    }
-    return null
+    const { price, percentOff } = effectivePrice(productData, selectedCurrency === "AED" ? "AED" : "INR")
+    return percentOff > 0 ? price : null
   }
 
   const getEffectivePrice = (): { price: number; currency: "AED" | "INR"; available: boolean } => {
@@ -936,7 +931,7 @@ export default function ProductPage() {
                   <ChevronRight className="h-3 w-3" />
                   <Link to="/shop" className="hover:text-gold-400 transition-colors">Shop</Link>
                   <ChevronRight className="h-3 w-3" />
-                  <Link to={`/category/${productData.categoryId._id}`} className="hover:text-gold-400 transition-colors">
+                  <Link to={`/shop/category/${productData.categoryId._id}`} className="hover:text-gold-400 transition-colors">
                     {productData.categoryId.name}
                   </Link>
                   <ChevronRight className="h-3 w-3" />
@@ -972,7 +967,7 @@ export default function ProductPage() {
                 transition={{ duration: 0.4, delay: 0.2 }}
                 className="flex items-center gap-4 flex-wrap"
               >
-                <RatingStars rating={productData.rating.average} />
+                <RatingStars rating={productData.rating?.average || 0} count={productData.rating?.count || 0} />
                 <div className="text-sm text-gray-500">• SKU: {productData.sku || "N/A"}</div>
               </motion.div>
 
@@ -1146,7 +1141,7 @@ export default function ProductPage() {
                   <div className="flex items-center gap-4 flex-wrap">
                     <div className="text-center p-6 bg-gray-50 rounded-xl">
                       <div className="text-4xl font-bold mb-2">{productData.rating.average.toFixed(1)}</div>
-                      <RatingStars rating={productData.rating.average} />
+                      <RatingStars rating={productData.rating?.average || 0} count={productData.rating?.count || 0} />
                       <div className="text-sm text-gray-600 mt-2">{productData.rating.count} reviews</div>
                     </div>
                     <div className="flex-1 min-w-[200px]">
@@ -1199,7 +1194,7 @@ export default function ProductPage() {
                       <div className="p-4">
                         <h3 className="text-sm font-medium text-gray-900 line-clamp-1 mb-2">{product.name}</h3>
                         <div className="flex items-center gap-2 mb-2">
-                          <RatingStars rating={product.rating?.average || 0} />
+                          <RatingStars rating={product.rating?.average || 0} count={product.rating?.count || 0} />
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="text-lg font-bold text-gray-900">

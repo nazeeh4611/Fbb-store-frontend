@@ -1,535 +1,374 @@
-import React, { useState } from "react";
-import axios from "axios";
-import { GoogleLogin } from '@react-oauth/google';
-import { X, ArrowRight, Mail, Lock, User, Phone } from 'lucide-react';
-import { baseurl } from "../../Constant/Base";
-
-const API_BASE_URL = baseurl;
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    const deviceId = localStorage.getItem('deviceId');
-    if (deviceId) {
-      config.headers['device-id'] = deviceId;
-    }
-    
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
-    return Promise.reject(error);
-  }
-);
+import React, { useEffect, useState } from "react";
+import { GoogleLogin } from "@react-oauth/google";
+import { X, Mail, Lock, User, Phone, Eye, EyeOff, Loader2 } from "lucide-react";
+import api, { errorMessage } from "../../lib/api";
+import fbb from "./Img/fbb.png";
 
 interface AuthModalProps {
   show: boolean;
   onClose: () => void;
+  initialMode?: "login" | "register";
+  /** Called with the email when a verification code has been sent. */
   onRegisterSuccess?: (email: string) => void;
-  onLoginSuccess?: (userData: any, token: string) => Promise<void>;
+  onLoginSuccess?: (userData: any, token: string) => Promise<void> | void;
   onForgotPassword?: () => void;
 }
 
-interface GoogleCredentialResponse {
-  credential?: string;
-  clientId?: string;
-  select_by?: string;
-}
+const inputBase =
+  "w-full pl-11 pr-4 py-3 rounded-xl border border-stone-300 bg-white text-stone-900 text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition disabled:bg-stone-50";
+
+const Field: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}> = ({ icon, label, children }) => (
+  <label className="block">
+    <span className="block text-xs font-medium text-stone-600 mb-1.5">{label}</span>
+    <span className="relative block">
+      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">{icon}</span>
+      {children}
+    </span>
+  </label>
+);
 
 const AuthModal: React.FC<AuthModalProps> = ({
   show,
   onClose,
+  initialMode = "login",
   onRegisterSuccess,
   onLoginSuccess,
-  onForgotPassword
+  onForgotPassword,
 }) => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(initialMode === "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [regEmail, setRegEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [regPassword, setRegPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
-  React.useEffect(() => {
-    const initDeviceId = () => {
-      let deviceId = localStorage.getItem('deviceId');
-      if (!deviceId) {
-        deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-        localStorage.setItem('deviceId', deviceId);
-      }
+  useEffect(() => {
+    if (!show) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && handleClose();
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
     };
-    initDeviceId();
-  }, []);
-
-  React.useEffect(() => {
-    if (show) {
-      const checkExistingSession = async () => {
-        const token = localStorage.getItem('token');
-        if (token) {
-          try {
-            const response = await api.get('/verify-token');
-            if (response.data.success) {
-              onClose();
-            }
-          } catch (error) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-          }
-        }
-      };
-      checkExistingSession();
-    }
-  }, [show, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show]);
 
   if (!show) return null;
 
   const resetForm = () => {
-    setEmail("");
     setPassword("");
-    setUsername("");
-    setRegEmail("");
-    setPhone("");
-    setRegPassword("");
     setConfirmPassword("");
     setError("");
-    setSuccess("");
+    setShowPassword(false);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const finishLogin = async (data: any) => {
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("userData", JSON.stringify(data.user));
+    localStorage.removeItem("guestToken");
+    await onLoginSuccess?.(data.user, data.token);
+    resetForm();
+    onClose();
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
+    const cleanEmail = email.trim().toLowerCase();
 
-    if (regPassword !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-    if (regPassword.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-    if (!username.trim()) {
-      setError("Name is required");
-      return;
-    }
-    if (!regEmail.trim() || !/\S+@\S+\.\S+/.test(regEmail)) {
-      setError("Valid email is required");
-      return;
-    }
-    if (!phone.trim() || phone.length < 10) {
-      setError("Valid phone number is required");
-      return;
-    }
+    if (!username.trim()) return setError("Please enter your name");
+    if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) return setError("Please enter a valid email address");
+    if (phone && phone.length < 10) return setError("Please enter a valid 10-digit phone number");
+    if (password.length < 6) return setError("Password must be at least 6 characters");
+    if (password !== confirmPassword) return setError("Passwords do not match");
+
     setIsSubmitting(true);
     try {
-      const response = await api.post('/register', {
+      const response = await api.post("/register", {
         username: username.trim(),
-        email: regEmail.trim().toLowerCase(),
+        email: cleanEmail,
         phone: phone.trim(),
-        password: regPassword
+        password,
       });
-      
       if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        setSuccess("Registration successful! Please verify your email with OTP.");
-        
-        if (onRegisterSuccess) {
-          onRegisterSuccess(regEmail);
-        }
-        
-        if (onLoginSuccess) {
-          await onLoginSuccess(response.data.user, response.data.token);
-        }
+        resetForm();
+        onRegisterSuccess?.(cleanEmail);
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          "Registration failed. Please try again.";
-      setError(errorMessage);
+    } catch (err) {
+      setError(errorMessage(err, "Registration failed. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
-
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
-      setError("Valid email is required");
-      return;
-    }
-    if (!password.trim()) {
-      setError("Password is required");
-      return;
-    }
+    const cleanEmail = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) return setError("Please enter a valid email address");
+    if (!password) return setError("Please enter your password");
 
     setIsSubmitting(true);
     try {
-      const response = await api.post('/login', { 
-        email: email.trim().toLowerCase(), 
-        password 
-      });
-      
-      if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        setSuccess("Login successful!");
-        
-        if (onLoginSuccess) {
-          await onLoginSuccess(response.data.user, response.data.token);
-        }
-        
-        setTimeout(() => {
-          resetForm();
-          onClose();
-        }, 1000);
+      const response = await api.post("/login", { email: cleanEmail, password });
+      if (response.data.success) await finishLogin(response.data);
+    } catch (err: any) {
+      if (err?.response?.data?.requiresVerification) {
+        resetForm();
+        onRegisterSuccess?.(err.response.data.email || cleanEmail);
+        return;
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          "Login failed. Please check your credentials.";
-      setError(errorMessage);
+      setError(errorMessage(err, "Login failed. Please check your credentials."));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: GoogleCredentialResponse) => {
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     setError("");
-    setSuccess("");
-    
-    if (!credentialResponse.credential) {
-      setError("Google authentication failed: No credential received");
-      return;
-    }
-    
+    if (!credentialResponse.credential) return setError("Google sign-in failed. Please try again.");
+    setIsSubmitting(true);
     try {
-      const response = await api.post('/google-auth', { 
-        credential: credentialResponse.credential 
-      });
-      
-      if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        setSuccess("Google authentication successful!");
-        
-        if (onLoginSuccess) {
-          await onLoginSuccess(response.data.user, response.data.token);
-        }
-        
-        setTimeout(() => {
-          resetForm();
-          onClose();
-        }, 1000);
-      } else {
-        setError(response.data.message || "Google authentication failed");
-      }
-    } catch (error: any) {
-      console.error("Google auth error:", error);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          "Google authentication failed. Please try again.";
-      setError(errorMessage);
+      const response = await api.post("/google-auth", { credential: credentialResponse.credential });
+      if (response.data.success) await finishLogin(response.data);
+      else setError(response.data.message || "Google sign-in failed");
+    } catch (err) {
+      setError(errorMessage(err, "Google sign-in failed. Please try again."));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleGoogleError = () => {
-    console.error("Google login error occurred");
-    setError("Google authentication failed. Please make sure Google Sign-In is properly configured.");
-  };
-
-  const handleModalClose = () => {
-    resetForm();
-    setIsLogin(true);
-    onClose();
-  };
-
-  const switchToLogin = () => {
-    setIsLogin(true);
+  const switchMode = (login: boolean) => {
+    setIsLogin(login);
     resetForm();
   };
 
-  const switchToRegister = () => {
-    setIsLogin(false);
-    resetForm();
-  };
+  const passwordToggle = (
+    <button
+      type="button"
+      onClick={() => setShowPassword((v) => !v)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-1"
+      aria-label={showPassword ? "Hide password" : "Show password"}
+    >
+      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+    </button>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(20, 78, 140, 0.15)', backdropFilter: 'blur(8px)' }}>
-      <div className="relative w-full max-w-md">
-        <div className="relative rounded-3xl overflow-hidden shadow-2xl" style={{ background: 'black' }}>
-          
-          <button 
-            onClick={handleModalClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center z-10 transition-all hover:rotate-90"
-            style={{ background: 'rgba(255, 255, 255, 0.2)' }}
-          >
-            <X className="w-4 h-4 text-white" />
-          </button>
+    <div
+      className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-stone-950/60 backdrop-blur-sm p-0 sm:p-4 animate-fade-in"
+      onMouseDown={(e) => e.target === e.currentTarget && handleClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-title"
+    >
+      <div className="relative w-full sm:max-w-md bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[95vh] overflow-y-auto">
+        <button
+          onClick={handleClose}
+          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
-          <div className="p-8">
-            {error && (
-              <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                <p className="text-red-400">{error}</p>
-              </div>
-            )}
-            
-            {success && (
-              <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
-                <p className="text-green-400">{success}</p>
-              </div>
-            )}
-
-            <div className="flex gap-1 mb-8 p-1.5 rounded-2xl" style={{ background: 'rgba(255, 255, 255, 0.15)' }}>
-              <button
-                onClick={switchToLogin}
-                className="flex-1 py-2.5 text-sm font-bold rounded-xl transition-all"
-                style={isLogin ? 
-                  { background: 'rgba(255, 255, 255, 0.25)', color: '#fff', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' } : 
-                  { color: 'rgba(255, 255, 255, 0.7)', background: 'transparent' }
-                }
-              >
-                Login
-              </button>
-              <button
-                onClick={switchToRegister}
-                className="flex-1 py-2.5 text-sm font-bold rounded-xl transition-all"
-                style={!isLogin ? 
-                  { background: 'rgba(255, 255, 255, 0.25)', color: '#fff', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' } : 
-                  { color: 'rgba(255, 255, 255, 0.7)', background: 'transparent' }
-                }
-              >
-                Register
-              </button>
+        <div className="px-6 sm:px-8 pt-8 pb-6">
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="h-12 w-20 rounded-xl bg-stone-950 flex items-center justify-center mb-4">
+              <img src={fbb} alt="FBB Store" className="h-9 w-auto object-contain" />
             </div>
+            <h2 id="auth-title" className="font-serif text-2xl text-stone-900">
+              {isLogin ? "Welcome back" : "Create your account"}
+            </h2>
+            <p className="text-sm text-stone-500 mt-1">
+              {isLogin ? "Sign in to checkout faster and track orders" : "Join FBB Store in less than a minute"}
+            </p>
+          </div>
 
-            {isLogin ? (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="relative">
-                  <Mail className="absolute left-4 top-3.5 w-4 h-4 text-white" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all placeholder-white/50"
-                    style={{ background: 'rgba(255, 255, 255, 0.15)', color: 'white' }}
-                    placeholder="Email"
-                    required
-                    disabled={isSubmitting}
-                  />
-                </div>
-                
-                <div className="relative">
-                  <Lock className="absolute left-4 top-3.5 w-4 h-4 text-white" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all placeholder-white/50"
-                    style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
-                    placeholder="Password"
-                    required
-                    disabled={isSubmitting}
-                  />
-                </div>
-                
-                {onForgotPassword && (
-                  <button 
-                    type="button" 
+          <div className="grid grid-cols-2 gap-1 p-1 mb-6 rounded-xl bg-stone-100" role="tablist">
+            {[
+              { label: "Sign in", active: isLogin, onClick: () => switchMode(true) },
+              { label: "Register", active: !isLogin, onClick: () => switchMode(false) },
+            ].map((tab) => (
+              <button
+                key={tab.label}
+                role="tab"
+                aria-selected={tab.active}
+                onClick={tab.onClick}
+                className={`py-2.5 text-sm font-semibold rounded-lg transition ${
+                  tab.active ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {error && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700" role="alert">
+              {error}
+            </div>
+          )}
+
+          {isLogin ? (
+            <form onSubmit={handleLogin} className="space-y-4" noValidate>
+              <Field icon={<Mail className="w-4 h-4" />} label="Email">
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={inputBase}
+                  placeholder="you@example.com"
+                  disabled={isSubmitting}
+                  autoFocus
+                />
+              </Field>
+              <Field icon={<Lock className="w-4 h-4" />} label="Password">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`${inputBase} pr-11`}
+                  placeholder="Your password"
+                  disabled={isSubmitting}
+                />
+                {passwordToggle}
+              </Field>
+
+              {onForgotPassword && (
+                <div className="flex justify-end -mt-1">
+                  <button
+                    type="button"
                     onClick={onForgotPassword}
-                    className="text-xs font-medium hover:underline"
-                    style={{ color: 'rgba(255, 255, 255, 0.8)' }}
+                    className="text-xs font-medium text-amber-700 hover:text-amber-800 hover:underline"
                   >
                     Forgot password?
                   </button>
-                )}
-                
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-3 text-white rounded-xl font-bold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ background: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(10px)' }}
-                >
-                  {isSubmitting ? 'Please wait...' : 'Continue'}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                </div>
+              )}
 
-                <div className="flex items-center gap-3 my-5">
-                  <div className="flex-1 h-px" style={{ background: 'rgba(255, 255, 255, 0.2)' }}></div>
-                  <span className="text-xs font-medium text-white opacity-70">or</span>
-                  <div className="flex-1 h-px" style={{ background: 'rgba(255, 255, 255, 0.2)' }}></div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-center rounded-xl overflow-hidden" style={{ background: 'white' }}>
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleError}
-                      useOneTap={false}
-                      auto_select={false}
-                    />
-                  </div>
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="relative">
-                    <User className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
-                      style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
-                      placeholder="Name"
-                      required
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
-                      style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
-                      placeholder="Phone"
-                      required
-                      disabled={isSubmitting}
-                      maxLength={15}
-                    />
-                  </div>
-                </div>
-                
-                <div className="relative">
-                  <Mail className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3 rounded-xl bg-stone-900 text-white font-semibold text-sm hover:bg-stone-800 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isSubmitting ? "Signing in…" : "Sign in"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4" noValidate>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field icon={<User className="w-4 h-4" />} label="Full name">
                   <input
-                    type="email"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
-                    style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
-                    placeholder="Email"
-                    required
+                    type="text"
+                    autoComplete="name"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className={inputBase}
+                    placeholder="Your name"
+                    disabled={isSubmitting}
+                    autoFocus
+                  />
+                </Field>
+                <Field icon={<Phone className="w-4 h-4" />} label="Phone (optional)">
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 15))}
+                    className={inputBase}
+                    placeholder="10-digit mobile"
                     disabled={isSubmitting}
                   />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
-                    <input
-                      type="password"
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
-                      style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
-                      placeholder="Password"
-                      required
-                      disabled={isSubmitting}
-                      minLength={6}
-                    />
-                  </div>
-                  
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-3.5 w-4 h-4 text-white opacity-70" />
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 placeholder-white/50"
-                      style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
-                      placeholder="Confirm"
-                      required
-                      disabled={isSubmitting}
-                      minLength={6}
-                    />
-                  </div>
-                </div>
-                
-                <div className="text-xs text-white/60">
-                  <p>Password must be at least 6 characters long</p>
-                </div>
-                
-                <button
-                  type="submit"
+                </Field>
+              </div>
+              <Field icon={<Mail className="w-4 h-4" />} label="Email">
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={inputBase}
+                  placeholder="you@example.com"
                   disabled={isSubmitting}
-                  className="w-full py-3 text-white rounded-xl font-bold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ background: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(10px)' }}
-                >
-                  {isSubmitting ? 'Creating Account...' : 'Create Account'}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                />
+              </Field>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field icon={<Lock className="w-4 h-4" />} label="Password">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`${inputBase} pr-11`}
+                    placeholder="Min. 6 characters"
+                    disabled={isSubmitting}
+                  />
+                  {passwordToggle}
+                </Field>
+                <Field icon={<Lock className="w-4 h-4" />} label="Confirm password">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={inputBase}
+                    placeholder="Repeat password"
+                    disabled={isSubmitting}
+                  />
+                </Field>
+              </div>
 
-                <div className="flex items-center gap-3 my-5">
-                  <div className="flex-1 h-px" style={{ background: 'rgba(255, 255, 255, 0.2)' }}></div>
-                  <span className="text-xs font-medium text-white opacity-70">or</span>
-                  <div className="flex-1 h-px" style={{ background: 'rgba(255, 255, 255, 0.2)' }}></div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-center rounded-xl overflow-hidden" style={{ background: 'white' }}>
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleError}
-                      useOneTap={false}
-                      auto_select={false}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-xs text-white/60">Already have an account?</span>
-                    <button
-                      type="button"
-                      onClick={switchToLogin}
-                      className="text-xs font-bold text-white hover:underline"
-                    >
-                      Login here
-                    </button>
-                  </div>
-                </div>
-              </form>
-            )}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3 rounded-xl bg-stone-900 text-white font-semibold text-sm hover:bg-stone-800 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isSubmitting ? "Creating account…" : "Create account"}
+              </button>
+              <p className="text-xs text-stone-500 text-center">We'll email you a 6-digit code to verify your address.</p>
+            </form>
+          )}
 
-            <p className="text-center text-xs mt-6 text-white opacity-60">
-              By continuing, you agree to our Terms and Privacy Policy
-            </p>
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px bg-stone-200" />
+            <span className="text-xs text-stone-400">or continue with</span>
+            <div className="flex-1 h-px bg-stone-200" />
           </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError("Google sign-in was cancelled or failed.")}
+              useOneTap={false}
+              shape="pill"
+              text={isLogin ? "signin_with" : "signup_with"}
+              width="320"
+            />
+          </div>
+
+          <p className="text-center text-xs mt-6 text-stone-400">
+            By continuing, you agree to our Terms of Service and Privacy Policy.
+          </p>
         </div>
       </div>
     </div>

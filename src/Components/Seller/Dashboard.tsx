@@ -6,13 +6,12 @@ import {
    DollarSign, Package, Users,
    ShoppingBag
 } from 'lucide-react';
-import axios from 'axios';
-import { baseurl } from '../../Constant/Base';
 import { useGetToken } from '../../Token/getToken';
 import ExtractToken from '../../Token/Extract';
 import { toast } from 'react-hot-toast';
 import { SellerLayout } from './SellerLayout';
 
+import api from '../../lib/api';
 interface DashboardStats {
   totalProducts: number;
   totalOrders: number;
@@ -87,7 +86,6 @@ const DashboardPage: React.FC = () => {
     Image: ''
   });
 
-  const api = axios.create({ baseURL: baseurl });
   const token = useGetToken("sellerToken");
   const sellerId: ExtractTokenResult = ExtractToken(token) as ExtractTokenResult;
 

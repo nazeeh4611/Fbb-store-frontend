@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { baseurl } from '../../Constant/Base';
-import axios from 'axios';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
+import api, { errorMessage } from '../../lib/api';
 interface LoginFormData {
   emailOrPhone: string;
   password: string;
@@ -29,9 +28,6 @@ const AdminLogin = () => {
     password: ''
   });
 
-  const api = axios.create({
-    baseURL: baseurl,
-  });
 
   const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +47,7 @@ const AdminLogin = () => {
       
     } catch (error) {
       // Show error toast
-      toast.error('Login failed. Please check your credentials.');
+      toast.error(errorMessage(error, 'Login failed. Please check your credentials.'));
       console.error('Login error:', error);
     }
   };
@@ -71,7 +67,6 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-4">
-      <Toaster position="top-right" richColors />
       <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-8 rounded-xl shadow-lg">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">FBB STORE</h1>

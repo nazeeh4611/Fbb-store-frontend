@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
-import { baseurl } from "../../Constant/Base";
 import NavBar from "../Layouts/Navbar";
 import Footer from "../Layouts/Footer";
 import { 
@@ -24,6 +22,7 @@ import {
 } from "lucide-react";
 import { FiArrowRight } from "react-icons/fi";
 
+import api from '../../lib/api';
 interface Category {
   name: string;
   image: string;
@@ -43,9 +42,6 @@ const Subcategory: React.FC = () => {
   const navigate = useNavigate();
   const { category, seller } = useParams();
 
-  const api = axios.create({
-    baseURL: baseurl
-  });
 
   const bannerSlides = [
     {
@@ -96,8 +92,7 @@ const Subcategory: React.FC = () => {
       const response = await api.get(`/get-subcategory/${seller}/${category}`);
       const enhancedData = response.data.subcategories.map((cat: Category) => ({
         ...cat,
-        description: cat.description || `Explore our curated selection of premium ${cat.name.toLowerCase()}`,
-        itemCount: Math.floor(Math.random() * 50) + 20
+        description: cat.description || `Explore our curated selection of premium ${cat.name.toLowerCase()}`
       }));
       setCategories(enhancedData);
     } catch (error) {

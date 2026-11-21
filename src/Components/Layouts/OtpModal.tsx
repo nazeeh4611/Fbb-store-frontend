@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
-import axios from 'axios';
-import { baseurl } from '../../Constant/Base';
 
+import api from '../../lib/api';
 interface OtpModalProps {
   show: boolean;
   onClose: () => void;
@@ -11,9 +10,6 @@ interface OtpModalProps {
   onLoginSuccess?: (userData: any, token: string) => Promise<void>; // Add this prop
 }
 
-const api = axios.create({
-  baseURL: baseurl,
-});
 
 const OtpModal: React.FC<OtpModalProps> = ({
   show,

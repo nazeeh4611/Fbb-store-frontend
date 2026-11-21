@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Search, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
 import { Sidebar } from './Sidebar';
-import { baseurl } from '../../Constant/Base';
-import axios from "axios";
 import { useParams } from 'react-router-dom';
 
+import api from '../../lib/api';
 interface Category {
   _id: string;
   name: string;
@@ -37,9 +36,6 @@ const SellerProducts = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { id } = useParams();
-  const api = axios.create({
-    baseURL: baseurl,
-  });
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);

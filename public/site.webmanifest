@@ -1,0 +1,13 @@
+{
+  "name": "FBB Store",
+  "short_name": "FBB Store",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0c0a09",
+  "icons": [
+    { "src": "/fbb.png", "sizes": "192x106", "type": "image/png" },
+    { "src": "/logo-512.png", "sizes": "512x284", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

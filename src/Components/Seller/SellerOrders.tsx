@@ -1,5 +1,4 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import axios from 'axios';
 import {
   Package, Truck, CheckCircle, XCircle, Clock,
   Search, Download, Eye, MapPin, Phone, Mail, User,
@@ -7,10 +6,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { baseurl } from '../../Constant/Base';
 import { useGetToken } from '../../Token/getToken';
 import { SellerLayout } from './SellerLayout';
 
+import api from '../../lib/api';
 interface User {
   name?: string;
   email?: string;
@@ -104,9 +103,6 @@ const SellerOrders: React.FC = () => {
   const navigate = useNavigate();
   const token = useGetToken("sellerToken");
 
-  const api = axios.create({
-    baseURL: baseurl,
-  });
 
   useEffect(() => {
     if (!token) {

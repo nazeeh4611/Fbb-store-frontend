@@ -4,12 +4,12 @@ import {
   ShoppingBag, Trash2, Plus, Minus, ArrowLeft, Shield, Truck,
   Package, CheckCircle, CreditCard, Lock, Heart, ChevronRight
 } from 'lucide-react';
-import axios from 'axios';
-import { baseurl } from '../../Constant/Base';
 import NavBar from '../Layouts/Navbar';
 import Footer from '../Layouts/Footer';
 import { toast } from 'react-hot-toast';
 
+import api, { errorMessage } from '../../lib/api';
+import { formatINR } from '../../lib/format';
 interface CartItem {
   _id: string;
   product: {
@@ -98,13 +98,9 @@ const CartPage = () => {
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
   const [cartTotal, setCartTotal] = useState(0);
-  const [shippingCost] = useState(0);
-  const [tax] = useState(0);
+  const [serverSummary, setServerSummary] = useState<{ shipping: number; tax: number } | null>(null);
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
-  const api = axios.create({
-    baseURL: baseurl,
-  });
   const fetchController = useRef<AbortController | null>(null);
 
   const features = [
@@ -116,7 +112,7 @@ const CartPage = () => {
     {
       icon: <Truck className="w-6 h-6" />,
       title: "Free Shipping",
-      description: "Free delivery on orders above ₹5000"
+      description: "Many products ship free"
     },
     {
       icon: <Package className="w-6 h-6" />,
@@ -157,6 +153,7 @@ const CartPage = () => {
         const items = response.data.cart || [];
         setCartItems(items);
         setCartTotal(computeTotal(items));
+        if (response.data.summary) setServerSummary(response.data.summary);
       }
     } catch (error: any) {
       if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
@@ -199,15 +196,11 @@ const CartPage = () => {
         }
       });
       window.dispatchEvent(new CustomEvent('cart:updated'));
+      fetchCartData(false);
     } catch (error: any) {
-      console.error('Error updating quantity:', error);
       setCartItems(previousItems);
       setCartTotal(computeTotal(previousItems));
-      if (error.response?.data?.message === 'Insufficient stock available') {
-        toast.error('Insufficient stock available');
-      } else {
-        toast.error('Failed to update quantity');
-      }
+      toast.error(errorMessage(error, 'Failed to update quantity'));
     } finally {
       setUpdatingId(null);
     }
@@ -229,6 +222,7 @@ const CartPage = () => {
       setCartItems(updatedItems);
       setCartTotal(computeTotal(updatedItems));
       window.dispatchEvent(new CustomEvent('cart:updated'));
+      fetchCartData(false);
       toast.success('Item removed from cart');
     } catch (error) {
       console.error('Error removing item:', error);
@@ -247,7 +241,7 @@ const CartPage = () => {
     const updatedItems = cartItems.filter(i => i._id !== item._id);
 
     try {
-      await api.post('/cart/wishlist/add', { productId: item.product._id }, {
+      await api.post('/wishlist/add', { productId: item.product._id }, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -263,6 +257,7 @@ const CartPage = () => {
       setCartTotal(computeTotal(updatedItems));
       window.dispatchEvent(new CustomEvent('cart:updated'));
       window.dispatchEvent(new CustomEvent('wishlist:updated'));
+      fetchCartData(false);
       toast.success('Moved to wishlist');
     } catch (error) {
       console.error('Error moving to wishlist:', error);
@@ -300,13 +295,14 @@ const CartPage = () => {
   };
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const grandTotal = cartTotal + shippingCost + tax;
+  const shippingCost = cartItems.length ? serverSummary?.shipping ?? 0 : 0;
+  const tax = Math.round(cartTotal * 0.18);
+  const grandTotal = Math.round((cartTotal + shippingCost + tax) * 100) / 100;
 
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
         <NavBar />
-        <div className="h-[80px]"></div>
         <main className="flex-grow pb-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="h-4 bg-gray-200 rounded w-64 mb-8 mt-6 animate-pulse" />
@@ -355,7 +351,6 @@ const CartPage = () => {
     <div className="min-h-screen flex flex-col bg-white">
       <NavBar />
 
-      <div className="h-[80px]"></div>
 
       <main className="flex-grow pb-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -528,25 +523,25 @@ const CartPage = () => {
                 <div className="p-6 space-y-4">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal ({totalItems} items)</span>
-                    <span className="font-medium transition-all duration-300">₹{cartTotal}</span>
+                    <span className="font-medium transition-all duration-300">{formatINR(cartTotal)}</span>
                   </div>
 
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
                     <span className="font-medium">
-                      {shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}
+                      {shippingCost === 0 ? 'FREE' : formatINR(shippingCost)}
                     </span>
                   </div>
 
                   <div className="flex justify-between text-gray-600">
-                    <span>Tax</span>
-                    <span className="font-medium">₹{tax}</span>
+                    <span>GST (18%)</span>
+                    <span className="font-medium">{formatINR(tax)}</span>
                   </div>
 
                   <div className="border-t border-gray-200 pt-4">
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total</span>
-                      <span className="transition-all duration-300">₹{grandTotal}</span>
+                      <span className="transition-all duration-300">{formatINR(grandTotal)}</span>
                     </div>
                   </div>
 

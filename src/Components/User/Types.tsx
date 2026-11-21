@@ -1,8 +1,7 @@
-import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { baseurl } from "../../Constant/Base";
 import { useNavigate, useParams } from "react-router-dom";
 
+import api from '../../lib/api';
 interface Category {
   name: string;
   image: string;
@@ -39,11 +38,7 @@ const Types : React.FC = () => {
   const [currentBannerIndex] = useState(0);
   const [categories,setCategories] = useState<Category[]>([])
   const navigate = useNavigate()
-  const api = axios.create({
-    baseURL:baseurl
-  })
-
-  const {category} = useParams()
+const {category} = useParams()
 
 
   const getCategory = async()=>{

@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Mail, Phone, ChevronLeft, ChevronRight, Package, Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
-import { baseurl } from '../../Constant/Base';
-import axios from "axios";
 
+import api from '../../lib/api';
 interface Seller {
   _id: string;
   name: string;
@@ -92,9 +91,6 @@ const SellerPage = () => {
 
   const itemsPerPage = 10;
 
-  const api = axios.create({
-    baseURL: baseurl,
-  });
 
   const getSellers = async () => {
     try {

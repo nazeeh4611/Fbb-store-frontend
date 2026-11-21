@@ -1,9 +1,10 @@
 User-agent: *
 Allow: /
 Disallow: /admin/
-Disallow: /api/
-Disallow: /private/
-Disallow: /*.json$
-Disallow: /*.xml$
+Disallow: /seller/
+Disallow: /checkout
+Disallow: /profile
+Disallow: /orders
+Disallow: /order/
 
-Sitemap: https://fbbstore.com/sitemap.xml
+Sitemap: https://www.flybuybrand.com/sitemap.xml

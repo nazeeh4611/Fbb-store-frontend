@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User, MapPin, ShoppingBag, Heart, Settings, LogOut, Package, Clock, Truck, CheckCircle, Edit, Mail, Phone, CreditCard, Trash2, Plus, Minus, Lock, Printer, Download, ChevronLeft, X, AlertCircle } from 'lucide-react';
-import axios from 'axios';
-import { baseurl } from '../../Constant/Base';
 import NavBar from '../Layouts/Navbar';
 import Footer from '../Layouts/Footer';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
+import api from '../../lib/api';
+import { logoutUser } from '../../lib/auth';
 interface UserProfile {
   name: string;
   email: string;
@@ -171,9 +171,6 @@ const ProfilePage = () => {
   }, [location.state]);
 
   const token = localStorage.getItem('token');
-  const api = axios.create({
-    baseURL: baseurl,
-  });
 
   useEffect(() => {
     if (activeTab === 'overview') {
@@ -261,7 +258,7 @@ const ProfilePage = () => {
     
     try {
       setUpdatingCart(cartItemId);
-      await api.put('/cart/cart/update', {
+      await api.put('/cart/update', {
         cartItemId,
         quantity: newQuantity
       });
@@ -280,7 +277,7 @@ const ProfilePage = () => {
 
   const removeItem = async (cartItemId: string) => {
     try {
-      await api.delete(`/cart/cart/remove/${cartItemId}`);
+      await api.delete(`/cart/remove/${cartItemId}`);
       toast.success('Item removed from cart');
       await fetchCartData();
     } catch (error) {
@@ -291,7 +288,7 @@ const ProfilePage = () => {
 
   const clearCart = async () => {
     try {
-      await api.delete('/cart/cart/clear');
+      await api.delete('/cart/clear');
       toast.success('Cart cleared');
       await fetchCartData();
     } catch (error) {
@@ -386,9 +383,9 @@ const ProfilePage = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
+  const handleLogout = async () => {
+    await logoutUser();
+    navigate('/');
     toast.success('Logged out successfully');
   };
 

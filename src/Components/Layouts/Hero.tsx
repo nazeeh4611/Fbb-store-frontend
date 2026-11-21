@@ -9,11 +9,10 @@ import banner1 from "../Layouts/Img/banner1.jpg";
 import slider1 from "../Layouts/Img/slider1.jpg";
 import slider12 from "../Layouts/Img/slider1 2.jpeg";
 import TrendingCarousel from "./Carousel";
-import axios from "axios";
-import { baseurl } from "../../Constant/Base";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock, Shield, Truck, Award, Sparkles, Zap, Heart, Grid, Package, Store } from "lucide-react";
 
+import api from '../../lib/api';
 const PRIORITY_CATEGORY_NAMES = ["MEN", "WOMEN", "GADGETS", "HOME-KITCHEN", "KIDS"];
 
 const Hero = ({ onShopNowClick = () => {} }) => {
@@ -52,7 +51,6 @@ const Hero = ({ onShopNowClick = () => {} }) => {
   const testimonialsScrollRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
-  const api = axios.create({ baseURL: baseurl, timeout: 5000 });
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);

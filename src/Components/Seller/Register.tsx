@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react';
-import { baseurl } from '../../Constant/Base';
 import axios from 'axios';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
 
+import api from '../../lib/api';
 interface FormData {
   name: string;
   email: string;
@@ -21,9 +21,6 @@ const SellerRegistration = () => {
     password: '',
   });
 
-  const api = axios.create({
-    baseURL: baseurl
-  });
 
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -75,13 +72,13 @@ const SellerRegistration = () => {
       if (response.data) {
         setStatus({
           type: 'success',
-          message: 'Registration successful! Please login to continue.'
+          message: 'Registration successful! Your account is awaiting admin approval.'
         });
-        toast.success('Register successfully login please', {
-            position: 'top-center',
-        });        setTimeout(() => {
-          navigate('/seller/');
-        }, 2000);
+        if (response.data.token) localStorage.setItem('sellerToken', response.data.token);
+        toast.success('Welcome aboard! Your seller account is awaiting approval.');
+        setTimeout(() => {
+          navigate('/seller/dashboard');
+        }, 1200);
       } else {
         setStatus({
           type: 'error',
@@ -115,7 +112,6 @@ const SellerRegistration = () => {
 
   return (
     <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-4">
-      <Toaster position="top-right" richColors />
       <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-8 rounded-xl shadow-lg">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">FBB STORE</h1>

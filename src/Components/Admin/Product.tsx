@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Search, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
 import { Sidebar } from './Sidebar';
-import { baseurl } from '../../Constant/Base';
-import axios from "axios";
 
+import api from '../../lib/api';
 interface Category {
   _id: string;
   name: string;
@@ -41,9 +40,6 @@ const ProductPage = () => {
   const [itemsPerPage] = useState(10);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const api = axios.create({
-    baseURL: baseurl,
-  });
 
   const getProducts = async () => {
     try {

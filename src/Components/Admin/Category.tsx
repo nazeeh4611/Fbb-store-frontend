@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { PlusCircle, X, Upload, Edit2, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 import { Sidebar } from './Sidebar';
-import { baseurl } from '../../Constant/Base';
-import axios from "axios";
 
+import api from '../../lib/api';
 // Types
 interface Category {
   _id: string;
@@ -104,9 +103,6 @@ const CategoryPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const api = axios.create({
-    baseURL: baseurl,
-  });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

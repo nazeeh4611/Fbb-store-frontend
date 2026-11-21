@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X, ChevronDown, ShoppingCart, Heart, User, LogOut, Package } from 'lucide-react';
 import fbb from "./Img/fbb.png";
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
-import { baseurl } from '../../Constant/Base';
 import AuthModal from './AuthModal';
 import OtpModal from './OtpModal';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
+import api from '../../lib/api';
+import { logoutUser } from '../../lib/auth';
+import { toast } from 'react-hot-toast';
+import { Search } from 'lucide-react';
 interface NavItem {
   label: string;
   href: string;
@@ -98,11 +100,17 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   const [cartLoading, setCartLoading] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
-  const [user, setUser] = useState<UserData | null>(null);
-  const [isLogged, setIsLogged] = useState(false);
+  const [user, setUser] = useState<UserData | null>(() => {
+    try {
+      const cached = localStorage.getItem('userData');
+      return localStorage.getItem('token') && cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  });
+  const [isLogged, setIsLogged] = useState(() => !!localStorage.getItem('token'));
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [updatingCartItem, setUpdatingCartItem] = useState<string | null>(null);
 
@@ -112,7 +120,6 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   const cartFetchController = useRef<AbortController | null>(null);
 
   const navigate = useNavigate();
-  const api = axios.create({ baseURL: baseurl });
 
   const navItems: NavItem[] = [
     { label: 'Home', href: '/' },
@@ -132,6 +139,27 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
     checkAuthStatus();
     fetchCartData(false);
     fetchWishlistData(false);
+  }, []);
+
+  useEffect(() => {
+    const openAuth = (e: Event) => {
+      const mode = (e as CustomEvent).detail?.mode;
+      setAuthMode(mode === 'register' ? 'register' : 'login');
+      setShowAuthModal(true);
+      setIsOpen(false);
+      setCartOpen(false);
+    };
+    const authChanged = () => {
+      checkAuthStatus();
+      fetchCartData(false);
+      fetchWishlistData(false);
+    };
+    window.addEventListener('auth:open', openAuth);
+    window.addEventListener('auth:changed', authChanged);
+    return () => {
+      window.removeEventListener('auth:open', openAuth);
+      window.removeEventListener('auth:changed', authChanged);
+    };
   }, []);
 
   useEffect(() => {
@@ -209,11 +237,19 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
         setIsLogged(false);
         setUser(null);
       }
-    } catch {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userData');
-      setIsLogged(false);
-      setUser(null);
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
+        setIsLogged(false);
+        setUser(null);
+      } else {
+        // Network hiccup / server waking up: keep the session and show cached user.
+        try {
+          const cached = localStorage.getItem('userData');
+          if (cached) { setUser(JSON.parse(cached)); setIsLogged(true); }
+        } catch { /* ignore */ }
+      }
     }
   };
 
@@ -248,7 +284,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
     try {
       if (showLoader) setWishlistLoading(true);
       const token = localStorage.getItem('token');
-      const response = await api.get('/cart/wishlist', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const response = await api.get('/wishlist', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       if (response.data.success) {
         setWishlistItems(response.data.wishlist || []);
         setWishlistCount(response.data.wishlistCount || 0);
@@ -341,7 +377,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
     setWishlistCount(prev => prev - 1);
     try {
       const token = localStorage.getItem('token');
-      await api.delete(`/cart/wishlist/remove/${productId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      await api.delete(`/wishlist/remove/${productId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       await fetchWishlistData(false);
     } catch (error) {
       console.error('Error removing from wishlist:', error);
@@ -352,7 +388,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
   const moveToCart = async (productId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await api.post('/cart/wishlist/move-to-cart', { productId }, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      await api.post('/wishlist/move-to-cart', { productId }, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       await Promise.all([fetchCartData(false), fetchWishlistData(false)]);
     } catch (error) {
       console.error('Error moving to cart:', error);
@@ -366,45 +402,39 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
 
   const handleRegisterSuccess = (email: string) => {
     setRegisteredEmail(email);
+    setShowAuthModal(false);
     setShowOtpModal(true);
   };
 
   const handleLoginSuccess = async (userData: UserData, token: string) => {
     localStorage.setItem('token', token);
     localStorage.setItem('userData', JSON.stringify(userData));
+    localStorage.removeItem('guestToken');
+    toast.success(`Welcome${userData?.name ? `, ${userData.name.split(' ')[0]}` : ''}!`);
     setIsLogged(true);
     setUser(userData);
     setShowAuthModal(false);
-    await Promise.all([fetchCartData(false), fetchWishlistData(false)]);
+    setShowOtpModal(false);
+    window.dispatchEvent(new CustomEvent('auth:changed'));
   };
 
   const handleOtpVerifySuccess = async () => {
-    await checkAuthStatus();
     setShowOtpModal(false);
-    await Promise.all([fetchCartData(false), fetchWishlistData(false)]);
+    window.dispatchEvent(new CustomEvent('auth:changed'));
   };
 
   const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await axios.post(`${baseurl}/logout`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      }
-      localStorage.removeItem('token');
-      localStorage.removeItem('userData');
-      setIsLogged(false);
-      setUser(null);
-      setCartItems([]);
-      setWishlistItems([]);
-      setCartCount(0);
-      setWishlistCount(0);
-      setCartTotal(0);
-      setShowProfileDropdown(false);
-      setIsOpen(false);
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    await logoutUser();
+    setIsLogged(false);
+    setUser(null);
+    setCartItems([]);
+    setWishlistItems([]);
+    setCartCount(0);
+    setWishlistCount(0);
+    setCartTotal(0);
+    setShowProfileDropdown(false);
+    setIsOpen(false);
+    navigate('/');
   };
 
   const CartPanel = () => (
@@ -653,8 +683,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
             <span>Profile</span>
           </Link>
           <Link
-            to="/profile"
-            state={{ activeTab: 'orders' }}
+            to="/orders"
             onClick={() => setShowProfileDropdown(false)}
             className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm"
           >
@@ -682,9 +711,12 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
             <div className="flex-shrink-0 flex items-center">
               <img
                 src={fbb}
-                alt="FBB Luxury"
+                alt="FBB Store"
                 className="h-16 w-auto object-contain cursor-pointer hover:opacity-90 transition-opacity duration-300"
                 onClick={() => navigate('/')}
+                width={115}
+                height={64}
+                decoding="async"
               />
             </div>
 
@@ -720,9 +752,10 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
             </div>
 
             <div className="hidden lg:flex items-center space-x-6">
-              {isLogged ? (
-                <>
-                  <button onClick={handleWishlistClick} className="text-white hover:text-amber-400 transition-colors duration-300 relative">
+                  <button onClick={() => handleNavClick('/shop')} aria-label="Search products" className="text-white hover:text-amber-400 transition-colors duration-300">
+                    <Search className="h-5 w-5" />
+                  </button>
+                  <button onClick={handleWishlistClick} aria-label="Wishlist" className="text-white hover:text-amber-400 transition-colors duration-300 relative">
                     <Heart className="h-6 w-6" />
                     {wishlistCount > 0 && (
                       <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
@@ -731,15 +764,16 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
                     )}
                   </button>
 
-                  <button onClick={handleCartClick} className="text-white hover:text-amber-400 transition-colors duration-300 relative">
+                  <button onClick={handleCartClick} aria-label="Cart" className="text-white hover:text-amber-400 transition-colors duration-300 relative">
                     <ShoppingCart className="h-6 w-6" />
                     {cartCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-amber-500 text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                        {cartCount}
+                      <span className="absolute -top-2 -right-2 bg-amber-500 text-black text-xs rounded-full h-5 min-w-5 px-1 flex items-center justify-center font-bold">
+                        {cartCount > 99 ? '99+' : cartCount}
                       </span>
                     )}
                   </button>
 
+              {isLogged ? (
                   <div className="relative">
                     <button
                       onClick={() => setShowProfileDropdown(prev => !prev)}
@@ -750,9 +784,8 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
                       </div>
                       <span className="max-w-[100px] truncate">{user?.name}</span>
                     </button>
-                    {showProfileDropdown && <ProfileDropdown />}
+                    {showProfileDropdown && ProfileDropdown()}
                   </div>
-                </>
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
@@ -763,10 +796,8 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
               )}
             </div>
 
-            <div className="lg:hidden flex items-center gap-4">
-              {isLogged && (
-                <>
-                  <button onClick={handleWishlistClick} className="text-white hover:text-amber-400 transition-colors duration-300 relative p-1">
+            <div className="lg:hidden flex items-center gap-3">
+                  <button onClick={handleWishlistClick} aria-label="Wishlist" className="text-white hover:text-amber-400 transition-colors duration-300 relative p-1">
                     <Heart className="h-6 w-6" />
                     {wishlistCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
@@ -774,16 +805,14 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
                       </span>
                     )}
                   </button>
-                  <button onClick={handleCartClick} className="text-white hover:text-amber-400 transition-colors duration-300 relative p-1">
+                  <button onClick={handleCartClick} aria-label="Cart" className="text-white hover:text-amber-400 transition-colors duration-300 relative p-1">
                     <ShoppingCart className="h-6 w-6" />
                     {cartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-amber-500 text-black text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
-                        {cartCount}
+                      <span className="absolute -top-1 -right-1 bg-amber-500 text-black text-[10px] rounded-full h-4 min-w-4 px-0.5 flex items-center justify-center font-bold">
+                        {cartCount > 99 ? '99+' : cartCount}
                       </span>
                     )}
                   </button>
-                </>
-              )}
               <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="text-white hover:text-amber-400 focus:outline-none transition-colors duration-300 p-1"
@@ -845,8 +874,7 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
                       <span className="text-xs">Profile</span>
                     </Link>
                     <Link
-                      to="/profile"
-                      state={{ activeTab: 'orders' }}
+                      to="/orders"
                       onClick={() => setIsOpen(false)}
                       className="flex flex-col items-center gap-1 text-white hover:text-amber-400"
                     >
@@ -875,12 +903,14 @@ const NavBar: React.FC<NavBarProps> = ({ isTransparent: _isTransparent = false }
         )}
       </nav>
 
-      {cartOpen && <CartPanel />}
-      {wishlistOpen && <WishlistPanel />}
+      {cartOpen && CartPanel()}
+      {wishlistOpen && WishlistPanel()}
 
       <div className="pt-20" />
 
       <AuthModal
+        key={authMode}
+        initialMode={authMode}
         show={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onRegisterSuccess={handleRegisterSuccess}

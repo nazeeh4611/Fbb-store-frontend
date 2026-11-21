@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { baseurl } from "../../Constant/Base";
 import NavBar from "../Layouts/Navbar";
 import Footer from "../Layouts/Footer";
 import { 
@@ -22,6 +20,7 @@ import {
 } from "lucide-react";
 import { FiArrowRight } from "react-icons/fi";
 
+import api from '../../lib/api';
 interface Seller {
   _id: string;
   name: string;
@@ -47,9 +46,6 @@ const SellerPages: React.FC = () => {
   const [, setScrolled] = useState(false);
   const navigate = useNavigate();
 
-  const api = axios.create({
-    baseURL: baseurl
-  });
 
   const bannerSlides = [
     {

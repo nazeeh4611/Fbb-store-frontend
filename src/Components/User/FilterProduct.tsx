@@ -4,10 +4,10 @@ import { useNavigate, useParams, Link } from "react-router-dom"
 import Footer from "../Layouts/Footer"
 import NavBar from "../Layouts/Navbar"
 // import { Button } from "../Layouts/button"
-import { baseurl } from "../../Constant/Base"
-import axios from "axios"
 import { motion } from "framer-motion"
 
+import api from '../../lib/api';
+import { effectivePrice } from '../../lib/format';
 interface CategoryId {
   _id: string;
   name: string;
@@ -67,9 +67,6 @@ interface FilterState {
 
 export default function FilterProduct() {
   const navigate = useNavigate()
-  const api = axios.create({
-    baseURL: baseurl,
-  });
 
   const [favorites, setFavorites] = useState<{ [key: string]: boolean }>({})
   const [visibleProducts, setVisibleProducts] = useState(12)
@@ -165,14 +162,14 @@ export default function FilterProduct() {
     try {
       const response = await api.get(`/get-related/${seller}/${id}`)
       if (response.data && Array.isArray(response.data.products)) {
-        const productsWithMockData = response.data.products.map((product: Product) => ({
+        const productsWithMockData = response.data.products.map((product: any) => ({
           ...product,
-          description: product.description || "Premium quality product crafted with attention to detail and exceptional materials.",
-          sizes: ["S", "M", "L", "XL"],
-          colors: ["Black", "White", "Navy", "Gray"],
-          discount: Math.floor(Math.random() * 40),
-          rating: Math.random() * 2 + 3,
-          reviews: Math.floor(Math.random() * 200) + 10
+          description: product.description || "",
+          sizes: product.sizes || [],
+          colors: product.colors || [],
+          discount: effectivePrice(product).percentOff,
+          rating: product.rating?.average || 0,
+          reviews: product.rating?.count || 0
         }))
         setAllProducts(productsWithMockData)
         setFilteredProducts(productsWithMockData)
@@ -568,7 +565,7 @@ export default function FilterProduct() {
                         />
                       )}
                       
-                      {product.discount && product.discount > 0 && (
+                      {!!product.discount && product.discount > 0 && (
                         <div className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
                           -{product.discount}%
                         </div>
@@ -595,7 +592,7 @@ export default function FilterProduct() {
                       </h3>
                       
                       <div className="flex items-center justify-between mb-2">
-                        {product.rating && (
+                        {!!product.reviews && (
                           <div className="flex items-center gap-1">
                             {renderRatingStars(product.rating)}
                             <span className="ml-1 text-xs text-gray-500">
@@ -655,7 +652,7 @@ export default function FilterProduct() {
                         alt={product.name}
                         className="w-full h-full object-cover"
                       />
-                      {product.discount && product.discount > 0 && (
+                      {!!product.discount && product.discount > 0 && (
                         <div className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
                           -{product.discount}%
                         </div>
@@ -762,7 +759,7 @@ export default function FilterProduct() {
                   <h3 className="text-sm font-medium text-gray-900 line-clamp-1">{product.name}</h3>
                   <div className="flex items-center justify-between mt-1">
                     <span className="text-sm font-bold text-gray-900">₹{product.priceINR}</span>
-                    {product.rating && (
+                    {!!product.reviews && (
                       <div className="flex items-center">
                         {renderRatingStars(product.rating)}
                       </div>

@@ -1,9 +1,6 @@
 import { Link } from "react-router-dom"
 import {
   Instagram,
-  Facebook,
-  Twitter,
-  Youtube,
   Mail,
   Phone,
   MapPin,
@@ -46,11 +43,11 @@ export default function Footer() {
   ];
 
   const features = [
-    { icon: <Truck className="w-5 h-5" />, title: "Free Shipping", description: "Orders over $500" },
+    { icon: <Truck className="w-5 h-5" />, title: "Fast Delivery", description: "Across India" },
     { icon: <Shield className="w-5 h-5" />, title: "Authentic", description: "100% genuine" },
     { icon: <CreditCard className="w-5 h-5" />, title: "Secure Pay", description: "SSL encrypted" },
-    { icon: <Headphones className="w-5 h-5" />, title: "24/7 Support", description: "Always here" },
-    { icon: <Gift className="w-5 h-5" />, title: "Gift Wrap", description: "Premium pack" }
+    { icon: <Headphones className="w-5 h-5" />, title: "Support", description: "Call or WhatsApp" },
+    { icon: <Gift className="w-5 h-5" />, title: "Easy Returns", description: "30-day policy" }
   ];
 
   const AccordionSection = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
@@ -117,12 +114,9 @@ export default function Footer() {
               </a>
             </div>
             <div className="flex space-x-4">
-              <a href="https://www.instagram.com/fbb_store_?igsh=NWU0c2RpbW95a3Ro" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gold-400 transition-colors">
+              <a href="https://www.instagram.com/fbb_store_" target="_blank" rel="noopener noreferrer" aria-label="FBB Store on Instagram" className="text-gray-400 hover:text-gold-400 transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-gold-400 transition-colors"><Facebook className="w-5 h-5" /></a>
-              <a href="#" className="text-gray-400 hover:text-gold-400 transition-colors"><Twitter className="w-5 h-5" /></a>
-              <a href="#" className="text-gray-400 hover:text-gold-400 transition-colors"><Youtube className="w-5 h-5" /></a>
             </div>
           </div>
 
@@ -197,11 +191,9 @@ export default function Footer() {
               </a>
             </div>
             <div className="flex flex-col gap-2">
-              <a href="https://www.instagram.com/fbb_store_?igsh=NWU0c2RpbW95a3Ro" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gold-400 transition-colors">
+              <a href="https://www.instagram.com/fbb_store_" target="_blank" rel="noopener noreferrer" aria-label="FBB Store on Instagram" className="text-gray-400 hover:text-gold-400 transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-gold-400 transition-colors"><Facebook className="w-5 h-5" /></a>
-              <a href="#" className="text-gray-400 hover:text-gold-400 transition-colors"><Youtube className="w-5 h-5" /></a>
             </div>
           </div>
 

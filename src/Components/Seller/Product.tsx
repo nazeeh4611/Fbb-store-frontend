@@ -2,13 +2,12 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { PlusCircle, X, Upload, Edit2, Search, ChevronLeft, ChevronRight, Trash2, Film, Image, Package, AlertCircle, CheckCircle, Clock } from 'lucide-react';
-import { baseurl } from '../../Constant/Base';
-import axios from "axios";
 import ExtractToken from '../../Token/Extract';
 import { useGetToken } from '../../Token/getToken';
 import { toast } from 'react-hot-toast';
 import { SellerLayout } from './SellerLayout';
 
+import api from '../../lib/api';
 interface Category {
   _id: string;
   name: string;
@@ -262,12 +261,6 @@ const SellerProductPage = () => {
   const token = useGetToken('sellerToken');
   const sellerId = ExtractToken(token);
 
-  const api = axios.create({
-    baseURL: baseurl,
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
 
   const [seller, setSeller] = useState<Seller>({ name: '', status: false });
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);

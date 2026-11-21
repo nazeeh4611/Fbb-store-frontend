@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, Phone } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { baseurl } from '../../Constant/Base';
 import axios from 'axios';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
+import api from '../../lib/api';
 interface LoginFormData {
   emailOrPhone: string;
   password: string;
@@ -21,9 +21,6 @@ const SellerLogin = () => {
     password: ''
   });
 
-  const api = axios.create({
-    baseURL: baseurl,
-  });
 
   const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +59,6 @@ const SellerLogin = () => {
 
   return (
     <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-4">
-      <Toaster position="top-right" richColors />
       <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-8 rounded-xl shadow-lg">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">FBB STORE</h1>
@@ -135,8 +131,7 @@ const SellerLogin = () => {
           </div>
 
           <div className="flex items-center justify-between">
-            <a href="/seller/forgot-password" className="text-sm text-blue-600 hover:text-blue-500">
-              Forgot your password?
+            <a href="mailto:fbbstore1@gmail.com?subject=Seller%20password%20reset" className="text-sm text-blue-600 hover:text-blue-500">Forgot your password?
             </a>
            <Link to="/seller/register"> Create an account</Link>
              

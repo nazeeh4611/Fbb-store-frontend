@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
-import { baseurl } from "../../Constant/Base";
 import NavBar from "../Layouts/Navbar";
 import Footer from "../Layouts/Footer";
 import { 
@@ -20,6 +18,7 @@ import {
 import { FiArrowRight } from "react-icons/fi";
 import { RiStarFill } from "react-icons/ri";
 
+import api from '../../lib/api';
 interface Category {
   name: string;
   image: string;
@@ -38,9 +37,6 @@ const CategoryPages: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const api = axios.create({
-    baseURL: baseurl
-  });
 
   const bannerSlides = [
     {
@@ -85,13 +81,10 @@ const CategoryPages: React.FC = () => {
 
   const getCategory = async () => {
     try {
-      console.log("first")
       const response = await api.get(`/get-category/${id}`);
-      console.log(response)
       const enhancedCategories = response.data.categories.map((cat: Category) => ({
         ...cat,
-        description: cat.description || `Explore our exclusive ${cat.name.toLowerCase()} collection featuring premium quality and craftsmanship.`,
-        itemCount: Math.floor(Math.random() * 50) + 20
+        description: cat.description || `Explore our exclusive ${cat.name.toLowerCase()} collection featuring premium quality and craftsmanship.`
       }));
       setCategories(enhancedCategories);
     } catch (error) {
