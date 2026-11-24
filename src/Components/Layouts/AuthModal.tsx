@@ -15,7 +15,7 @@ interface AuthModalProps {
 }
 
 const inputBase =
-  "w-full pl-11 pr-4 py-3 rounded-xl border border-stone-300 bg-white text-stone-900 text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition disabled:bg-stone-50";
+  "w-full pl-11 pr-4 py-3 rounded-md border border-line bg-white text-ink text-sm placeholder-muted focus:outline-none focus:ring-2 focus:ring-ink/40 focus:border-ink transition disabled:bg-canvas";
 
 const Field: React.FC<{
   icon: React.ReactNode;
@@ -23,9 +23,9 @@ const Field: React.FC<{
   children: React.ReactNode;
 }> = ({ icon, label, children }) => (
   <label className="block">
-    <span className="block text-xs font-medium text-stone-600 mb-1.5">{label}</span>
+    <span className="block text-xs font-medium text-ink-soft mb-1.5">{label}</span>
     <span className="relative block">
-      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">{icon}</span>
+      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none">{icon}</span>
       {children}
     </span>
   </label>
@@ -162,7 +162,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
     <button
       type="button"
       onClick={() => setShowPassword((v) => !v)}
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-1"
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink-soft p-1"
       aria-label={showPassword ? "Hide password" : "Show password"}
     >
       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -177,10 +177,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
       aria-modal="true"
       aria-labelledby="auth-title"
     >
-      <div className="relative w-full sm:max-w-md bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[95vh] overflow-y-auto">
+      <div className="relative w-full sm:max-w-md bg-white sm:rounded-md rounded-t-2xl shadow-2xl max-h-[95vh] overflow-y-auto">
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition"
+          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-muted hover:bg-canvas hover:text-ink transition"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -188,18 +188,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
         <div className="px-6 sm:px-8 pt-8 pb-6">
           <div className="flex flex-col items-center text-center mb-6">
-            <div className="h-12 w-20 rounded-xl bg-stone-950 flex items-center justify-center mb-4">
+            <div className="h-12 w-20 rounded-md bg-stone-950 flex items-center justify-center mb-4">
               <img src={fbb} alt="FBB Store" className="h-9 w-auto object-contain" />
             </div>
-            <h2 id="auth-title" className="font-serif text-2xl text-stone-900">
+            <h2 id="auth-title" className="font-display text-2xl text-ink">
               {isLogin ? "Welcome back" : "Create your account"}
             </h2>
-            <p className="text-sm text-stone-500 mt-1">
+            <p className="text-sm text-muted mt-1">
               {isLogin ? "Sign in to checkout faster and track orders" : "Join FBB Store in less than a minute"}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-1 p-1 mb-6 rounded-xl bg-stone-100" role="tablist">
+          <div className="grid grid-cols-2 gap-1 p-1 mb-6 rounded-md bg-canvas" role="tablist">
             {[
               { label: "Sign in", active: isLogin, onClick: () => switchMode(true) },
               { label: "Register", active: !isLogin, onClick: () => switchMode(false) },
@@ -210,7 +210,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 aria-selected={tab.active}
                 onClick={tab.onClick}
                 className={`py-2.5 text-sm font-semibold rounded-lg transition ${
-                  tab.active ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  tab.active ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
                 }`}
               >
                 {tab.label}
@@ -219,7 +219,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </div>
 
           {error && (
-            <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700" role="alert">
+            <div className="mb-4 px-4 py-3 rounded-md bg-sale-soft border border-red-200 text-sm text-sale" role="alert">
               {error}
             </div>
           )}
@@ -256,7 +256,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   <button
                     type="button"
                     onClick={onForgotPassword}
-                    className="text-xs font-medium text-amber-700 hover:text-amber-800 hover:underline"
+                    className="text-xs font-medium text-ink hover:text-ink hover:underline"
                   >
                     Forgot password?
                   </button>
@@ -266,7 +266,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 rounded-xl bg-stone-900 text-white font-semibold text-sm hover:bg-stone-800 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-3 rounded-md bg-ink text-white font-semibold text-sm hover:bg-black transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 {isSubmitting ? "Signing in…" : "Sign in"}
@@ -340,19 +340,19 @@ const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 rounded-xl bg-stone-900 text-white font-semibold text-sm hover:bg-stone-800 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-3 rounded-md bg-ink text-white font-semibold text-sm hover:bg-black transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 {isSubmitting ? "Creating account…" : "Create account"}
               </button>
-              <p className="text-xs text-stone-500 text-center">We'll email you a 6-digit code to verify your address.</p>
+              <p className="text-xs text-muted text-center">We'll email you a 6-digit code to verify your address.</p>
             </form>
           )}
 
           <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-stone-200" />
-            <span className="text-xs text-stone-400">or continue with</span>
-            <div className="flex-1 h-px bg-stone-200" />
+            <div className="flex-1 h-px bg-line" />
+            <span className="text-xs text-muted">or continue with</span>
+            <div className="flex-1 h-px bg-line" />
           </div>
 
           <div className="flex justify-center">
@@ -366,7 +366,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             />
           </div>
 
-          <p className="text-center text-xs mt-6 text-stone-400">
+          <p className="text-center text-xs mt-6 text-muted">
             By continuing, you agree to our Terms of Service and Privacy Policy.
           </p>
         </div>

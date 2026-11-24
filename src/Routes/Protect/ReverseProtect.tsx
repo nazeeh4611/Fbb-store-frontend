@@ -18,7 +18,7 @@ const ReProtect: React.FC<ReverseProtectedRouteProps> = ({
   }
   
   // If already logged in, redirect to products page
-  return <Navigate to="/admin/product" state={{ from: location }} replace />;
+  return <Navigate to="/admin" state={{ from: location }} replace />;
 };
 
 export default ReProtect;

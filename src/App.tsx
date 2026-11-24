@@ -12,14 +12,14 @@ const App: React.FC = () => (
       toastOptions={{
         duration: 3500,
         style: {
-          background: "#1c1917",
+          background: "#111111",
           color: "#fafaf9",
-          borderRadius: "12px",
+          borderRadius: "6px",
           fontSize: "14px",
           padding: "12px 16px",
           boxShadow: "0 10px 30px -10px rgba(0,0,0,0.35)",
         },
-        success: { iconTheme: { primary: "#f59e0b", secondary: "#1c1917" } },
+        success: { iconTheme: { primary: "#22c55e", secondary: "#111111" } },
         error: { duration: 4500, iconTheme: { primary: "#ef4444", secondary: "#fff" } },
       }}
     />

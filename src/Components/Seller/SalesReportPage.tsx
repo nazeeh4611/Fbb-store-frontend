@@ -111,8 +111,8 @@ const SalesReportPage: React.FC = () => {
   const COLORS: string[] = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d']
 
   const StatCard = ({ title, value }: { title: string; value: number }) => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <p className="text-sm text-gray-500">{title}</p>
+    <div className="bg-white rounded-md  border border-line p-6">
+      <p className="text-sm text-muted">{title}</p>
       <h3 className="text-2xl font-bold mt-2">
         {title.includes('Sales') || title.includes('Order Value')
           ? `₹${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -125,7 +125,7 @@ const SalesReportPage: React.FC = () => {
     return (
       <SellerLayout title="Sales Report">
         <div className="flex items-center justify-center h-64">
-          <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+          <div className="w-10 h-10 border-4 border-line border-t-blue-500 rounded-full animate-spin"></div>
         </div>
       </SellerLayout>
     )
@@ -137,7 +137,7 @@ const SalesReportPage: React.FC = () => {
         <select
           value={timeRange}
           onChange={handleTimeRangeChange}
-          className="border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="border border-line px-4 py-2 rounded-lg focus:ring-2 focus:ring-ink focus:border-ink"
         >
           <option value="week">Last 7 Days</option>
           <option value="month">This Month</option>
@@ -146,7 +146,7 @@ const SalesReportPage: React.FC = () => {
         </select>
         <button
           onClick={fetchReportData}
-          className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
+          className="p-2 text-ink-soft hover:text-ink transition-colors"
         >
           <RefreshCw size={20} />
         </button>
@@ -160,8 +160,8 @@ const SalesReportPage: React.FC = () => {
       </div>
 
       {reportData.salesData.length > 0 && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Sales Trend</h3>
+        <div className="bg-white p-6 rounded-md  border border-line mb-8">
+          <h3 className="text-lg font-semibold text-ink mb-4">Sales Trend</h3>
           <ResponsiveContainer width="100%" height={300}>
             <RechartsLineChart data={reportData.salesData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -184,8 +184,8 @@ const SalesReportPage: React.FC = () => {
       )}
 
       {reportData.categoryData.length > 0 && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Category Distribution</h3>
+        <div className="bg-white p-6 rounded-md  border border-line">
+          <h3 className="text-lg font-semibold text-ink mb-4">Category Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
             <RechartsPieChart>
             <Pie
@@ -211,8 +211,8 @@ const SalesReportPage: React.FC = () => {
       )}
 
       {reportData.salesData.length === 0 && reportData.categoryData.length === 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-          <p className="text-gray-400">No sales data available for the selected period</p>
+        <div className="bg-white rounded-md  border border-line p-12 text-center">
+          <p className="text-muted">No sales data available for the selected period</p>
         </div>
       )}
     </SellerLayout>

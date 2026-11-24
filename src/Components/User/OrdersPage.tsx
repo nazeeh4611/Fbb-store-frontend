@@ -60,11 +60,11 @@ const OrdersPage = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <Clock className="h-5 w-5 text-stone-500" />;
-      case 'processing': return <Package className="h-5 w-5 text-stone-500" />;
-      case 'shipped': return <Truck className="h-5 w-5 text-stone-500" />;
-      case 'delivered': return <CheckCircle className="h-5 w-5 text-stone-500" />;
-      default: return <Package className="h-5 w-5 text-stone-500" />;
+      case 'pending': return <Clock className="h-5 w-5 text-muted" />;
+      case 'processing': return <Package className="h-5 w-5 text-muted" />;
+      case 'shipped': return <Truck className="h-5 w-5 text-muted" />;
+      case 'delivered': return <CheckCircle className="h-5 w-5 text-muted" />;
+      default: return <Package className="h-5 w-5 text-muted" />;
     }
   };
 
@@ -80,20 +80,20 @@ const OrdersPage = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-stone-100 text-stone-700';
-      case 'processing': return 'bg-stone-100 text-stone-700';
-      case 'shipped': return 'bg-stone-100 text-stone-700';
-      case 'delivered': return 'bg-stone-100 text-stone-700';
-      default: return 'bg-stone-100 text-stone-700';
+      case 'pending': return 'bg-canvas text-ink-soft';
+      case 'processing': return 'bg-canvas text-ink-soft';
+      case 'shipped': return 'bg-canvas text-ink-soft';
+      case 'delivered': return 'bg-canvas text-ink-soft';
+      default: return 'bg-canvas text-ink-soft';
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-stone-50">
+      <div className="min-h-screen flex flex-col bg-canvas">
         <NavBar />
         <div className="flex-grow flex items-center justify-center mt-[80px] pb-24">
-          <div className="w-16 h-16 border-4 border-stone-200 border-t-white rounded-full animate-spin"></div>
+          <div className="w-16 h-16 border-4 border-line border-t-white rounded-full animate-spin"></div>
         </div>
         <Footer />
       </div>
@@ -101,27 +101,27 @@ const OrdersPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-stone-50 text-stone-900">
+    <div className="min-h-screen flex flex-col bg-canvas text-ink">
       <NavBar />
       
       <main className="flex-grow pb-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <nav className="flex items-center text-sm text-stone-500 mb-8">
-            <a href="/" className="hover:text-stone-900 transition-colors">Home</a>
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
+          <nav className="flex items-center text-sm text-muted mb-8">
+            <a href="/" className="hover:text-ink transition-colors">Home</a>
             <span className="mx-2">/</span>
             <span className="font-medium">My Orders</span>
           </nav>
 
-          <h1 className="text-3xl font-bold mb-8">My Orders</h1>
+          <h1 className="font-display text-3xl sm:text-4xl font-semibold uppercase mb-8">My orders</h1>
 
           {orders.length === 0 ? (
             <div className="text-center py-12">
-              <ShoppingBag className="h-24 w-24 text-gray-700 mx-auto mb-6" />
+              <ShoppingBag className="h-24 w-24 text-ink-soft mx-auto mb-6" />
               <h2 className="text-2xl font-bold mb-4">No Orders Yet</h2>
-              <p className="text-stone-500 mb-8">You haven't placed any orders yet.</p>
+              <p className="text-muted mb-8">You haven't placed any orders yet.</p>
               <button
                 onClick={() => navigate('/shop')}
-                className="bg-stone-900 text-white hover:bg-stone-800 px-6 py-3 rounded-lg font-medium"
+                className="bg-ink text-white hover:bg-black px-6 py-3 rounded-lg font-medium"
               >
                 Start Shopping
               </button>
@@ -129,8 +129,8 @@ const OrdersPage = () => {
           ) : (
             <div className="space-y-6">
               {orders.map((order) => (
-                <div key={order._id} className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-                  <div className="p-6 border-b border-stone-200">
+                <div key={order._id} className="bg-white rounded-md border border-line overflow-hidden">
+                  <div className="p-6 border-b border-line">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-3 mb-2">
@@ -139,7 +139,7 @@ const OrdersPage = () => {
                             {getStatusText(order.status)}
                           </span>
                         </div>
-                        <div className="text-sm text-stone-500">
+                        <div className="text-sm text-muted">
                           Order #{order.orderId} • 
                           {new Date(order.createdAt).toLocaleDateString('en-IN', {
                             day: 'numeric',
@@ -150,7 +150,7 @@ const OrdersPage = () => {
                       </div>
                       <div className="text-right">
                         <div className="text-xl font-bold">{formatINR(order.total)}</div>
-                        <div className="text-sm text-stone-500 capitalize">
+                        <div className="text-sm text-muted capitalize">
                           {order.paymentMethod === 'razorpay' ? 'Paid Online' : 'Cash on Delivery'}
                         </div>
                       </div>
@@ -170,9 +170,9 @@ const OrdersPage = () => {
                           </div>
                           <div className="flex-1">
                             <h4 className="font-medium">{item.product.name}</h4>
-                            <p className="text-sm text-stone-500">{item.product.brand}</p>
+                            <p className="text-sm text-muted">{item.product.brand}</p>
                             <div className="flex justify-between items-center mt-2">
-                              <span className="text-sm text-stone-500">Qty: {item.quantity}</span>
+                              <span className="text-sm text-muted">Qty: {item.quantity}</span>
                               <span className="font-medium">{formatINR(item.price * item.quantity)}</span>
                             </div>
                           </div>
@@ -180,19 +180,19 @@ const OrdersPage = () => {
                       ))}
                     </div>
 
-                    <div className="mt-6 pt-6 border-t border-stone-200 flex flex-col sm:flex-row justify-between gap-4">
-                      <div className="text-sm text-stone-500">
+                    <div className="mt-6 pt-6 border-t border-line flex flex-col sm:flex-row justify-between gap-4">
+                      <div className="text-sm text-muted">
                         {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                       </div>
                       <div className="flex gap-4">
                         <button
                           onClick={() => navigate(`/order/${order.orderId}`)}
-                          className="px-4 py-2 border border-stone-200 text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
+                          className="px-4 py-2 border border-line text-ink-soft hover:bg-canvas rounded-lg transition-colors"
                         >
                           View Details
                         </button>
                         {order.status === 'delivered' && (
-                          <button className="px-4 py-2 bg-stone-900 text-white hover:bg-stone-800 rounded-lg transition-colors">
+                          <button className="px-4 py-2 bg-ink text-white hover:bg-black rounded-lg transition-colors">
                             Buy Again
                           </button>
                         )}

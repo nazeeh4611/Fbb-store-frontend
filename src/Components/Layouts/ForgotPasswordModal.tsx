@@ -12,7 +12,7 @@ interface ForgotPasswordModalProps {
 type Step = "email" | "reset" | "done";
 
 const input =
-  "w-full pl-11 pr-4 py-3 rounded-xl border border-stone-300 bg-white text-stone-900 text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition";
+  "w-full pl-11 pr-4 py-3 rounded-md border border-line bg-white text-ink text-sm placeholder-muted focus:outline-none focus:ring-2 focus:ring-ink/40 focus:border-ink transition";
 
 /** Two-step password reset: email -> 6-digit code + new password. */
 const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ show, onClose }) => {
@@ -91,10 +91,10 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ show, onClose
       aria-modal="true"
       aria-labelledby="forgot-title"
     >
-      <div className="relative w-full sm:max-w-sm bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl p-6 sm:p-8">
+      <div className="relative w-full sm:max-w-sm bg-white sm:rounded-md rounded-t-2xl shadow-2xl p-6 sm:p-8">
         <button
           onClick={close}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition"
+          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-muted hover:bg-canvas hover:text-ink transition"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -103,14 +103,14 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ show, onClose
         {step === "done" ? (
           <div className="text-center py-4">
             <CheckCircle2 className="w-14 h-14 text-emerald-500 mx-auto mb-4" />
-            <h2 id="forgot-title" className="font-serif text-2xl text-stone-900 mb-2">Password updated</h2>
-            <p className="text-sm text-stone-500 mb-6">You can now sign in with your new password.</p>
+            <h2 id="forgot-title" className="font-display text-2xl text-ink mb-2">Password updated</h2>
+            <p className="text-sm text-muted mb-6">You can now sign in with your new password.</p>
             <button
               onClick={() => {
                 close();
                 openAuthModal("login");
               }}
-              className="w-full py-3 rounded-xl bg-stone-900 text-white font-semibold text-sm hover:bg-stone-800 transition"
+              className="w-full py-3 rounded-md bg-ink text-white font-semibold text-sm hover:bg-black transition"
             >
               Sign in
             </button>
@@ -118,21 +118,21 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ show, onClose
         ) : (
           <>
             <div className="mb-6">
-              <div className="h-11 w-11 rounded-full bg-amber-50 flex items-center justify-center mb-4">
-                <KeyRound className="w-5 h-5 text-amber-600" />
+              <div className="h-11 w-11 rounded-full bg-canvas flex items-center justify-center mb-4">
+                <KeyRound className="w-5 h-5 text-ink" />
               </div>
-              <h2 id="forgot-title" className="font-serif text-2xl text-stone-900">
+              <h2 id="forgot-title" className="font-display text-2xl text-ink">
                 {step === "email" ? "Reset your password" : "Check your email"}
               </h2>
-              <p className="text-sm text-stone-500 mt-1">
+              <p className="text-sm text-muted mt-1">
                 {step === "email"
                   ? "Enter your account email and we'll send you a 6-digit code."
-                  : <>We sent a code to <span className="font-medium text-stone-800">{email}</span>.</>}
+                  : <>We sent a code to <span className="font-medium text-ink">{email}</span>.</>}
               </p>
             </div>
 
             {error && (
-              <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700" role="alert">
+              <div className="mb-4 px-4 py-3 rounded-md bg-sale-soft border border-red-200 text-sm text-sale" role="alert">
                 {error}
               </div>
             )}
@@ -140,7 +140,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ show, onClose
             {step === "email" ? (
               <form onSubmit={sendCode} className="space-y-4" noValidate>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                   <input
                     type="email"
                     autoComplete="email"
@@ -154,7 +154,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ show, onClose
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 rounded-xl bg-stone-900 text-white font-semibold text-sm hover:bg-stone-800 transition flex items-center justify-center gap-2 disabled:opacity-60"
+                  className="w-full py-3 rounded-md bg-ink text-white font-semibold text-sm hover:bg-black transition flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   Send code
@@ -168,13 +168,13 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ show, onClose
                   autoComplete="one-time-code"
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="w-full py-3 rounded-xl border border-stone-300 text-center text-2xl tracking-[0.5em] font-semibold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500"
+                  className="w-full py-3 rounded-md border border-line text-center text-2xl tracking-[0.5em] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-ink/40 focus:border-ink"
                   placeholder="••••••"
                   aria-label="6-digit code"
                   autoFocus
                 />
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                   <input
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
@@ -186,7 +186,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ show, onClose
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink-soft p-1"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -195,20 +195,20 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ show, onClose
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 rounded-xl bg-stone-900 text-white font-semibold text-sm hover:bg-stone-800 transition flex items-center justify-center gap-2 disabled:opacity-60"
+                  className="w-full py-3 rounded-md bg-ink text-white font-semibold text-sm hover:bg-black transition flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   Update password
                 </button>
                 <div className="flex items-center justify-between text-xs">
-                  <button type="button" onClick={() => setStep("email")} className="text-stone-500 hover:text-stone-800">
+                  <button type="button" onClick={() => setStep("email")} className="text-muted hover:text-ink">
                     Change email
                   </button>
                   <button
                     type="button"
                     disabled={resendIn > 0 || loading}
                     onClick={() => sendCode()}
-                    className="font-medium text-amber-700 hover:text-amber-800 disabled:text-stone-400"
+                    className="font-medium text-ink hover:text-ink disabled:text-muted"
                   >
                     {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
                   </button>

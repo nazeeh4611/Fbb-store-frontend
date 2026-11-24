@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Search, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
-import { Sidebar } from './Sidebar';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AdminLayout } from './Sidebar';
 import { useParams } from 'react-router-dom';
 
 import api from '../../lib/api';
@@ -33,13 +33,8 @@ const SellerProducts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [seller, setSeller] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { id } = useParams();
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
 
   const getSeller = async () => {
     try {
@@ -130,47 +125,11 @@ const SellerProducts = () => {
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
-      <div className="md:hidden fixed top-0 left-0 right-0 z-10 bg-white p-4 shadow-md flex justify-between items-center">
-        <button
-          onClick={toggleSidebar}
-          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-        >
-          <Menu size={24} />
-        </button>
-        <h1 className="text-xl font-bold text-gray-800">Admin Panel</h1>
-        <div className="w-10"></div>
-      </div>
+    <AdminLayout title="Seller products">
 
-      <div
-        className={`fixed inset-0 bg-black bg-opacity-50 z-20 transition-opacity md:hidden ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={toggleSidebar}
-      ></div>
-
-      <div
-        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-      >
-        <div className="flex justify-between items-center p-4 md:hidden">
-          <h2 className="text-xl font-bold text-gray-800">Menu</h2>
-          <button
-            onClick={toggleSidebar}
-            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-          >
-            <X size={24} />
-          </button>
-        </div>
-        <Sidebar />
-      </div>
-
-      <main className="flex-1 p-8 pt-20 md:pt-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Welcome, <span className="text-blue-600">Admin</span></h1>
-          <p className="text-gray-600 mt-2">Manage your products</p>
-        </header>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="p-6 flex flex-col md:flex-row justify-between items-center border-b border-gray-100">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 md:mb-0">Products By {seller}</h2>
+        <div className="bg-white rounded-md  border border-line">
+          <div className="p-6 flex flex-col md:flex-row justify-between items-center border-b border-line">
+            <h2 className="text-xl font-semibold text-ink mb-4 md:mb-0">Products By {seller}</h2>
 
             <div className="relative flex-grow md:max-w-md">
               <input
@@ -178,46 +137,46 @@ const SellerProducts = () => {
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-ink focus:border-ink"
               />
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted" />
             </div>
           </div>
 
           <div className="overflow-x-auto p-6">
             <table className="w-full">
               <thead>
-                <tr className="text-left border-b border-gray-100">
-                  <th className="pb-4 px-4 text-gray-600 font-semibold cursor-pointer" onClick={() => handleSort('name')}>
+                <tr className="text-left border-b border-line">
+                  <th className="pb-4 px-4 text-ink-soft font-semibold cursor-pointer" onClick={() => handleSort('name')}>
                     Product Name <SortIndicator field="name" />
                   </th>
-                  <th className="pb-4 px-4 text-gray-600 font-semibold cursor-pointer" onClick={() => handleSort('brand')}>
+                  <th className="pb-4 px-4 text-ink-soft font-semibold cursor-pointer" onClick={() => handleSort('brand')}>
                     Brand <SortIndicator field="brand" />
                   </th>
-                  <th className="pb-4 px-4 text-gray-600 font-semibold cursor-pointer" onClick={() => handleSort('category')}>
+                  <th className="pb-4 px-4 text-ink-soft font-semibold cursor-pointer" onClick={() => handleSort('category')}>
                     Category <SortIndicator field="category" />
                   </th>
-                  <th className="pb-4 px-4 text-gray-600 font-semibold">Sub Category</th>
-                  <th className="pb-4 px-4 text-gray-600 font-semibold cursor-pointer" onClick={() => handleSort('priceINR')}>
+                  <th className="pb-4 px-4 text-ink-soft font-semibold">Sub Category</th>
+                  <th className="pb-4 px-4 text-ink-soft font-semibold cursor-pointer" onClick={() => handleSort('priceINR')}>
                     Price (INR) <SortIndicator field="priceINR" />
                   </th>
-                  <th className="pb-4 px-4 text-gray-600 font-semibold cursor-pointer" onClick={() => handleSort('priceAED')}>
+                  <th className="pb-4 px-4 text-ink-soft font-semibold cursor-pointer" onClick={() => handleSort('priceAED')}>
                     Price (AED) <SortIndicator field="priceAED" />
                   </th>
-                  <th className="pb-4 px-4 text-gray-600 font-semibold">Images</th>
-                  <th className="pb-4 px-4 text-gray-600 font-semibold">Trending</th>
+                  <th className="pb-4 px-4 text-ink-soft font-semibold">Images</th>
+                  <th className="pb-4 px-4 text-ink-soft font-semibold">Trending</th>
                 </tr>
               </thead>
               <tbody>
                 {currentItems.length > 0 ? (
                   currentItems.map((product) => (
-                    <tr key={product._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                      <td className="py-4 px-4 text-gray-800">{product.name}</td>
-                      <td className="py-4 px-4 text-gray-800">{product.brand}</td>
-                      <td className="py-4 px-4 text-gray-800">{product.categoryId.name}</td>
-                      <td className="py-4 px-4 text-gray-800">{product.subCategoryId.name}</td>
-                      <td className="py-4 px-4 text-gray-800">₹{product.priceINR}</td>
-                      <td className="py-4 px-4 text-gray-800">AED {product.priceAED}</td>
+                    <tr key={product._id} className="border-b border-gray-50 hover:bg-canvas transition-colors">
+                      <td className="py-4 px-4 text-ink">{product.name}</td>
+                      <td className="py-4 px-4 text-ink">{product.brand}</td>
+                      <td className="py-4 px-4 text-ink">{product.categoryId.name}</td>
+                      <td className="py-4 px-4 text-ink">{product.subCategoryId.name}</td>
+                      <td className="py-4 px-4 text-ink">₹{product.priceINR}</td>
+                      <td className="py-4 px-4 text-ink">AED {product.priceAED}</td>
                       <td className="py-4 px-4">
                         <div className="flex space-x-2">
                           {product.images && Object.values(product.images).length > 0 && (
@@ -230,7 +189,7 @@ const SellerProducts = () => {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <span className={`px-2 py-1 rounded ${product.trending ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                        <span className={`px-2 py-1 rounded ${product.trending ? 'bg-green-100 text-green-800' : 'bg-canvas text-ink'}`}>
                           {product.trending ? 'Yes' : 'No'}
                         </span>
                       </td>
@@ -238,7 +197,7 @@ const SellerProducts = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="py-4 px-4 text-center text-gray-500">No products found</td>
+                    <td colSpan={8} className="py-4 px-4 text-center text-muted">No products found</td>
                   </tr>
                 )}
               </tbody>
@@ -246,15 +205,15 @@ const SellerProducts = () => {
           </div>
 
           {sortedProducts.length > 0 && totalPages > 1 && (
-            <div className="flex flex-col md:flex-row justify-between items-center px-6 py-4 border-t border-gray-100 gap-4">
-              <div className="text-sm text-gray-600">
+            <div className="flex flex-col md:flex-row justify-between items-center px-6 py-4 border-t border-line gap-4">
+              <div className="text-sm text-ink-soft">
                 Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, sortedProducts.length)} of {sortedProducts.length} entries
               </div>
               <div className="flex space-x-2">
                 <button
                   onClick={() => paginate(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 rounded-lg border border-line hover:bg-canvas disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -263,8 +222,8 @@ const SellerProducts = () => {
                     key={number}
                     onClick={() => paginate(number)}
                     className={`w-10 h-10 rounded-lg ${currentPage === number
-                      ? 'bg-blue-600 text-white'
-                      : 'border border-gray-200 hover:bg-gray-50'
+                      ? 'bg-ink text-white'
+                      : 'border border-line hover:bg-canvas'
                       }`}
                   >
                     {number}
@@ -273,7 +232,7 @@ const SellerProducts = () => {
                 <button
                   onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 rounded-lg border border-line hover:bg-canvas disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -281,8 +240,7 @@ const SellerProducts = () => {
             </div>
           )}
         </div>
-      </main>
-    </div>
+      </AdminLayout>
   );
 };
 

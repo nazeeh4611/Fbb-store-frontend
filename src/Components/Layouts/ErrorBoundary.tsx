@@ -36,25 +36,25 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, State
   render() {
     if (!this.state.error) return this.props.children;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
-        <div className="max-w-md w-full text-center bg-white rounded-2xl border border-stone-200 p-8 shadow-sm">
-          <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 text-xl font-semibold">
+      <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
+        <div className="max-w-md w-full text-center bg-white rounded-md border border-line p-8 shadow-sm">
+          <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-canvas flex items-center justify-center text-ink text-xl font-semibold">
             !
           </div>
-          <h1 className="text-xl font-semibold text-stone-900 mb-2">Something went wrong</h1>
-          <p className="text-stone-600 mb-6 text-sm">
+          <h1 className="text-xl font-semibold text-ink mb-2">Something went wrong</h1>
+          <p className="text-ink-soft mb-6 text-sm">
             We hit an unexpected problem loading this page. Please try again.
           </p>
           <div className="flex gap-3 justify-center">
             <button
               onClick={() => window.location.reload()}
-              className="px-5 py-2.5 rounded-lg bg-stone-900 text-white text-sm font-medium hover:bg-stone-800 transition-colors"
+              className="px-5 py-2.5 rounded-lg bg-ink text-white text-sm font-medium hover:bg-black transition-colors"
             >
               Reload page
             </button>
             <a
               href="/"
-              className="px-5 py-2.5 rounded-lg border border-stone-300 text-stone-700 text-sm font-medium hover:bg-stone-100 transition-colors"
+              className="px-5 py-2.5 rounded-lg border border-line text-ink-soft text-sm font-medium hover:bg-canvas transition-colors"
             >
               Go home
             </a>

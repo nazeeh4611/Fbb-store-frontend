@@ -792,8 +792,8 @@ const SellerProductPage = () => {
   const Toggle = ({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) => (
     <label className="relative inline-flex items-center cursor-pointer">
       <input type="checkbox" className="sr-only peer" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-      <span className="ml-3 text-sm font-medium text-gray-700">{label}</span>
+      <div className="w-11 h-6 bg-line peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-line rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-line after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-ink"></div>
+      <span className="ml-3 text-sm font-medium text-ink-soft">{label}</span>
     </label>
   );
 
@@ -804,9 +804,9 @@ const SellerProductPage = () => {
     getSubCategories();
   }, []);
 
-  const inputClass = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
-  const labelClass = 'block text-sm font-medium text-gray-700 mb-2';
-  const errorClass = 'text-red-500 text-xs mt-1';
+  const inputClass = 'w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-ink focus:border-ink';
+  const labelClass = 'block text-sm font-medium text-ink-soft mb-2';
+  const errorClass = 'text-sale text-xs mt-1';
 
   return (
     <SellerLayout title="Manage Products" subtitle={`Welcome back, ${seller.name}!`}>
@@ -817,16 +817,16 @@ const SellerProductPage = () => {
             <span className="font-medium">Approved Seller</span>
           </div>
         ) : (
-          <div className="flex items-center gap-2 bg-yellow-50 text-yellow-700 px-4 py-2 rounded-full">
+          <div className="flex items-center gap-2 bg-canvas text-ink px-4 py-2 rounded-full">
             <AlertCircle className="h-5 w-5" />
             <span className="font-medium">Pending Approval</span>
           </div>
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-800">Products</h2>
+      <div className="bg-white rounded-md  border border-line overflow-hidden">
+        <div className="p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-line">
+          <h2 className="text-xl font-semibold text-ink">Products</h2>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <div className="relative flex-grow sm:max-w-md">
               <input
@@ -834,14 +834,14 @@ const SellerProductPage = () => {
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full pl-10 pr-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-ink focus:border-ink text-sm"
               />
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted" />
             </div>
             <button
               onClick={handleAddNewClick}
               disabled={!seller.status}
-              className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${seller.status ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+              className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${seller.status ? 'bg-ink text-white hover:bg-black' : 'bg-canvas text-muted cursor-not-allowed'}`}
             >
               <PlusCircle size={18} />
               <span>Add Product</span>
@@ -852,7 +852,7 @@ const SellerProductPage = () => {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px]">
             <thead>
-              <tr className="text-left border-b border-gray-100 bg-gray-50">
+              <tr className="text-left border-b border-line bg-canvas">
                 {[
                   ['name', 'Product'],
                   ['brand', 'Brand'],
@@ -860,35 +860,35 @@ const SellerProductPage = () => {
                   ['stock', 'Stock'],
                   ['sku', 'SKU']
                 ].map(([field, label]) => (
-                  <th key={field} className="py-3 px-4 text-gray-600 font-semibold text-sm cursor-pointer hover:text-gray-800" onClick={() => handleSort(field)}>
+                  <th key={field} className="py-3 px-4 text-ink-soft font-semibold text-sm cursor-pointer hover:text-ink" onClick={() => handleSort(field)}>
                     <div className="flex items-center gap-1">
                       {label} <SortIndicator field={field} />
                     </div>
                   </th>
                 ))}
-                <th className="py-3 px-4 text-gray-600 font-semibold text-sm">Actions</th>
+                <th className="py-3 px-4 text-ink-soft font-semibold text-sm">Actions</th>
               </tr>
             </thead>
             <tbody>
               {currentItems.length > 0 ? currentItems.map((product) => (
-                <tr key={product._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                <tr key={product._id} className="border-b border-gray-50 hover:bg-canvas/50 transition-colors">
                   <td className="py-3 px-4">
                     <div>
-                      <p className="font-medium text-gray-800">{product.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{product.categoryId.name}</p>
+                      <p className="font-medium text-ink">{product.name}</p>
+                      <p className="text-xs text-muted mt-0.5">{product.categoryId.name}</p>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-gray-600 text-sm">{product.brand}</td>
+                  <td className="py-3 px-4 text-ink-soft text-sm">{product.brand}</td>
                   <td className="py-3 px-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-800">₹{product.priceINR}</p>
-                      <p className="text-xs text-gray-500">AED {product.priceAED}</p>
+                      <p className="text-sm font-medium text-ink">₹{product.priceINR}</p>
+                      <p className="text-xs text-muted">AED {product.priceAED}</p>
                     </div>
                   </td>
                   <td className="py-3 px-4">
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      product.stock <= 0 ? 'bg-red-100 text-red-700' :
-                      product.stock <= product.lowStockThreshold ? 'bg-amber-100 text-amber-700' :
+                      product.stock <= 0 ? 'bg-red-100 text-sale' :
+                      product.stock <= product.lowStockThreshold ? 'bg-canvas text-ink' :
                       'bg-green-100 text-green-700'
                     }`}>
                       {product.stock <= 0 ? (
@@ -900,18 +900,18 @@ const SellerProductPage = () => {
                       )}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-gray-500 text-xs font-mono">{product.sku}</td>
+                  <td className="py-3 px-4 text-muted text-xs font-mono">{product.sku}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
                       <button
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-1.5 text-ink hover:bg-canvas rounded-lg transition-colors"
                         onClick={() => handleEdit(product)}
                         disabled={!seller.status}
                       >
                         <Edit2 size={16} />
                       </button>
                       <button
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1.5 text-sale hover:bg-sale-soft rounded-lg transition-colors"
                         onClick={() => handleDeleteClick(product._id)}
                         disabled={!seller.status}
                       >
@@ -922,10 +922,10 @@ const SellerProductPage = () => {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={6} className="py-12 px-4 text-center text-gray-400">
+                  <td colSpan={6} className="py-12 px-4 text-center text-muted">
                     <Package size={40} className="mx-auto mb-3 opacity-50" />
                     <p>No products found</p>
-                    <button onClick={handleAddNewClick} className="mt-3 text-blue-500 text-sm font-medium">Add your first product →</button>
+                    <button onClick={handleAddNewClick} className="mt-3 text-ink text-sm font-medium">Add your first product →</button>
                   </td>
                 </tr>
               )}
@@ -935,19 +935,19 @@ const SellerProductPage = () => {
 
         {deleteModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Confirm Delete</h3>
-              <p className="text-gray-500 mb-6">Are you sure you want to delete this product? This action cannot be undone.</p>
+            <div className="bg-white rounded-md max-w-md w-full p-6 shadow-xl">
+              <h3 className="text-xl font-semibold text-ink mb-2">Confirm Delete</h3>
+              <p className="text-muted mb-6">Are you sure you want to delete this product? This action cannot be undone.</p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => { setDeleteModalOpen(false); setProductToDelete(null); }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+                  className="px-4 py-2 text-ink-soft hover:text-ink font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  className="px-4 py-2 bg-sale text-white rounded-lg hover:bg-sale transition-colors"
                 >
                   Delete Product
                 </button>
@@ -957,15 +957,15 @@ const SellerProductPage = () => {
         )}
 
         {sortedProducts.length > 0 && totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row justify-between items-center px-4 py-3 border-t border-gray-100 gap-3">
-            <div className="text-sm text-gray-500">
+          <div className="flex flex-col sm:flex-row justify-between items-center px-4 py-3 border-t border-line gap-3">
+            <div className="text-sm text-muted">
               Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, sortedProducts.length)} of {sortedProducts.length}
             </div>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-lg border border-line hover:bg-canvas disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -975,7 +975,7 @@ const SellerProductPage = () => {
                     key={n}
                     onClick={() => setCurrentPage(n)}
                     className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                      currentPage === n ? 'bg-blue-500 text-white' : 'border border-gray-200 hover:bg-gray-50'
+                      currentPage === n ? 'bg-ink text-white' : 'border border-line hover:bg-canvas'
                     }`}
                   >
                     {n}
@@ -985,7 +985,7 @@ const SellerProductPage = () => {
               <button
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-lg border border-line hover:bg-canvas disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight size={16} />
               </button>
@@ -996,27 +996,27 @@ const SellerProductPage = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-xl">
-            <div className="flex justify-between items-center p-5 border-b border-gray-100">
-              <h3 className="text-xl font-semibold text-gray-800">{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <div className="bg-white rounded-md max-w-4xl w-full max-h-[90vh] flex flex-col shadow-xl">
+            <div className="flex justify-between items-center p-5 border-b border-line">
+              <h3 className="text-xl font-semibold text-ink">{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+              <button onClick={handleCloseModal} className="text-muted hover:text-ink-soft transition-colors">
                 <X size={22} />
               </button>
             </div>
 
-            <div className="flex border-b border-gray-100 overflow-x-auto px-2">
+            <div className="flex border-b border-line overflow-x-auto px-2">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   className={`px-5 py-3 font-medium text-sm whitespace-nowrap transition-colors relative ${
-                    activeTab === tab.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
+                    activeTab === tab.id ? 'text-ink border-b-2 border-ink' : 'text-muted hover:text-ink-soft'
                   }`}
                   onClick={() => setActiveTab(tab.id)}
                 >
                   {tab.label}
                   {tab.required && validationErrors[tab.id === 'basic' ? 'name' : 'images'] && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-sale rounded-full"></span>
                   )}
                 </button>
               ))}
@@ -1025,13 +1025,13 @@ const SellerProductPage = () => {
             {formData.categoryId && fieldConfig && (
               <div className="px-6 pt-3">
                 <div className="flex flex-wrap gap-2">
-                  {fieldConfig.showColors && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">Colors</span>}
-                  {fieldConfig.showSizes && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">Sizes</span>}
-                  {fieldConfig.showMaterial && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">Material</span>}
-                  {fieldConfig.showWeight && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">Weight</span>}
-                  {fieldConfig.showDimensions && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">Dimensions</span>}
-                  {fieldConfig.showWarranty && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">Warranty</span>}
-                  {fieldConfig.showSpecifications && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">Specifications</span>}
+                  {fieldConfig.showColors && <span className="text-xs bg-canvas text-ink px-2 py-1 rounded-full">Colors</span>}
+                  {fieldConfig.showSizes && <span className="text-xs bg-canvas text-ink px-2 py-1 rounded-full">Sizes</span>}
+                  {fieldConfig.showMaterial && <span className="text-xs bg-canvas text-ink px-2 py-1 rounded-full">Material</span>}
+                  {fieldConfig.showWeight && <span className="text-xs bg-canvas text-ink px-2 py-1 rounded-full">Weight</span>}
+                  {fieldConfig.showDimensions && <span className="text-xs bg-canvas text-ink px-2 py-1 rounded-full">Dimensions</span>}
+                  {fieldConfig.showWarranty && <span className="text-xs bg-canvas text-ink px-2 py-1 rounded-full">Warranty</span>}
+                  {fieldConfig.showSpecifications && <span className="text-xs bg-canvas text-ink px-2 py-1 rounded-full">Specifications</span>}
                 </div>
               </div>
             )}
@@ -1042,8 +1042,8 @@ const SellerProductPage = () => {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className={`${labelClass} ${validationErrors.name ? 'text-red-600' : ''}`}>
-                          Product Name <span className="text-red-500">*</span>
+                        <label className={`${labelClass} ${validationErrors.name ? 'text-sale' : ''}`}>
+                          Product Name <span className="text-sale">*</span>
                         </label>
                         <input
                           type="text"
@@ -1065,7 +1065,7 @@ const SellerProductPage = () => {
                       <div>
                         <label className={labelClass}>SKU</label>
                         <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className={inputClass} />
-                        <p className="text-xs text-gray-400 mt-1">Auto-generated if left blank</p>
+                        <p className="text-xs text-muted mt-1">Auto-generated if left blank</p>
                       </div>
                       <div>
                         <label className={labelClass}>Stock Quantity</label>
@@ -1076,8 +1076,8 @@ const SellerProductPage = () => {
                         <input type="number" value={formData.lowStockThreshold} onChange={(e) => setFormData({ ...formData, lowStockThreshold: e.target.value })} className={inputClass} min="0" />
                       </div>
                       <div>
-                        <label className={`${labelClass} ${validationErrors.categoryId ? 'text-red-600' : ''}`}>
-                          Category <span className="text-red-500">*</span>
+                        <label className={`${labelClass} ${validationErrors.categoryId ? 'text-sale' : ''}`}>
+                          Category <span className="text-sale">*</span>
                         </label>
                         <select
                           value={formData.categoryId}
@@ -1091,8 +1091,8 @@ const SellerProductPage = () => {
                         {getFieldError('categoryId') && <p className={errorClass}>{getFieldError('categoryId')}</p>}
                       </div>
                       <div>
-                        <label className={`${labelClass} ${validationErrors.subCategoryId ? 'text-red-600' : ''}`}>
-                          Sub Category <span className="text-red-500">*</span>
+                        <label className={`${labelClass} ${validationErrors.subCategoryId ? 'text-sale' : ''}`}>
+                          Sub Category <span className="text-sale">*</span>
                         </label>
                         <select
                           value={formData.subCategoryId}
@@ -1107,8 +1107,8 @@ const SellerProductPage = () => {
                         {getFieldError('subCategoryId') && <p className={errorClass}>{getFieldError('subCategoryId')}</p>}
                       </div>
                       <div>
-                        <label className={`${labelClass} ${validationErrors.priceINR ? 'text-red-600' : ''}`}>
-                          Price (INR) <span className="text-red-500">*</span>
+                        <label className={`${labelClass} ${validationErrors.priceINR ? 'text-sale' : ''}`}>
+                          Price (INR) <span className="text-sale">*</span>
                         </label>
                         <input
                           type="number"
@@ -1176,19 +1176,19 @@ const SellerProductPage = () => {
                     {fieldConfig.showSpecifications && (
                       <div className="border-t pt-5">
                         <div className="flex justify-between items-center mb-4">
-                          <h4 className="text-lg font-medium text-gray-800">Specifications</h4>
-                          <button type="button" onClick={addSpecification} className="text-blue-600 hover:text-blue-800 text-sm font-medium">+ Add Specification</button>
+                          <h4 className="text-lg font-medium text-ink">Specifications</h4>
+                          <button type="button" onClick={addSpecification} className="text-ink hover:text-blue-800 text-sm font-medium">+ Add Specification</button>
                         </div>
                         <div className="space-y-3">
                           {specifications.map((spec, index) => (
                             <div key={index} className="flex flex-col sm:flex-row gap-2">
-                              <input type="text" value={spec.key} onChange={(e) => updateSpecification(index, 'key', e.target.value)} placeholder="Key (e.g., Processor)" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                              <input type="text" value={spec.value} onChange={(e) => updateSpecification(index, 'value', e.target.value)} placeholder="Value (e.g., Intel i7)" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                              <button type="button" onClick={() => removeSpecification(index)} className="px-3 py-2 text-red-600 hover:text-red-800"><X size={18} /></button>
+                              <input type="text" value={spec.key} onChange={(e) => updateSpecification(index, 'key', e.target.value)} placeholder="Key (e.g., Processor)" className="flex-1 px-3 py-2 border border-line rounded-lg text-sm" />
+                              <input type="text" value={spec.value} onChange={(e) => updateSpecification(index, 'value', e.target.value)} placeholder="Value (e.g., Intel i7)" className="flex-1 px-3 py-2 border border-line rounded-lg text-sm" />
+                              <button type="button" onClick={() => removeSpecification(index)} className="px-3 py-2 text-sale hover:text-red-800"><X size={18} /></button>
                             </div>
                           ))}
                           {specifications.length === 0 && (
-                            <p className="text-sm text-gray-400 text-center py-4">No specifications added. Click the button above to add.</p>
+                            <p className="text-sm text-muted text-center py-4">No specifications added. Click the button above to add.</p>
                           )}
                         </div>
                       </div>
@@ -1198,10 +1198,10 @@ const SellerProductPage = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         {fieldConfig.showWeight && (
                           <div className="space-y-3">
-                            <h4 className="font-medium text-gray-800">Weight</h4>
+                            <h4 className="font-medium text-ink">Weight</h4>
                             <div className="flex gap-2">
-                              <input type="number" value={formData.weightValue} onChange={(e) => setFormData({ ...formData, weightValue: e.target.value })} placeholder="Weight" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                              <select value={formData.weightUnit} onChange={(e) => setFormData({ ...formData, weightUnit: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                              <input type="number" value={formData.weightValue} onChange={(e) => setFormData({ ...formData, weightValue: e.target.value })} placeholder="Weight" className="flex-1 px-3 py-2 border border-line rounded-lg text-sm" />
+                              <select value={formData.weightUnit} onChange={(e) => setFormData({ ...formData, weightUnit: e.target.value })} className="px-3 py-2 border border-line rounded-lg text-sm bg-white">
                                 <option value="g">g</option>
                                 <option value="kg">kg</option>
                                 <option value="lb">lb</option>
@@ -1212,13 +1212,13 @@ const SellerProductPage = () => {
                         )}
                         {fieldConfig.showDimensions && (
                           <div className="space-y-3">
-                            <h4 className="font-medium text-gray-800">Dimensions</h4>
+                            <h4 className="font-medium text-ink">Dimensions</h4>
                             <div className="grid grid-cols-3 gap-2">
-                              <input type="number" value={formData.length} onChange={(e) => setFormData({ ...formData, length: e.target.value })} placeholder="L" className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                              <input type="number" value={formData.width} onChange={(e) => setFormData({ ...formData, width: e.target.value })} placeholder="W" className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                              <input type="number" value={formData.height} onChange={(e) => setFormData({ ...formData, height: e.target.value })} placeholder="H" className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                              <input type="number" value={formData.length} onChange={(e) => setFormData({ ...formData, length: e.target.value })} placeholder="L" className="px-3 py-2 border border-line rounded-lg text-sm" />
+                              <input type="number" value={formData.width} onChange={(e) => setFormData({ ...formData, width: e.target.value })} placeholder="W" className="px-3 py-2 border border-line rounded-lg text-sm" />
+                              <input type="number" value={formData.height} onChange={(e) => setFormData({ ...formData, height: e.target.value })} placeholder="H" className="px-3 py-2 border border-line rounded-lg text-sm" />
                             </div>
-                            <select value={formData.dimensionUnit} onChange={(e) => setFormData({ ...formData, dimensionUnit: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                            <select value={formData.dimensionUnit} onChange={(e) => setFormData({ ...formData, dimensionUnit: e.target.value })} className="w-full px-3 py-2 border border-line rounded-lg text-sm bg-white">
                               <option value="cm">cm</option>
                               <option value="inch">inch</option>
                               <option value="mm">mm</option>
@@ -1230,15 +1230,15 @@ const SellerProductPage = () => {
 
                     {fieldConfig.showWarranty && (
                       <div className="border-t pt-5">
-                        <h4 className="font-medium text-gray-800 mb-3">Warranty</h4>
+                        <h4 className="font-medium text-ink mb-3">Warranty</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          <input type="number" value={formData.warrantyPeriod} onChange={(e) => setFormData({ ...formData, warrantyPeriod: e.target.value })} placeholder="Period" className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-                          <select value={formData.warrantyUnit} onChange={(e) => setFormData({ ...formData, warrantyUnit: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                          <input type="number" value={formData.warrantyPeriod} onChange={(e) => setFormData({ ...formData, warrantyPeriod: e.target.value })} placeholder="Period" className="px-3 py-2 border border-line rounded-lg text-sm" />
+                          <select value={formData.warrantyUnit} onChange={(e) => setFormData({ ...formData, warrantyUnit: e.target.value })} className="px-3 py-2 border border-line rounded-lg text-sm bg-white">
                             <option value="days">Days</option>
                             <option value="months">Months</option>
                             <option value="years">Years</option>
                           </select>
-                          <input type="text" value={formData.warrantyDescription} onChange={(e) => setFormData({ ...formData, warrantyDescription: e.target.value })} placeholder="Warranty Details" className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                          <input type="text" value={formData.warrantyDescription} onChange={(e) => setFormData({ ...formData, warrantyDescription: e.target.value })} placeholder="Warranty Details" className="px-3 py-2 border border-line rounded-lg text-sm" />
                         </div>
                       </div>
                     )}
@@ -1247,12 +1247,12 @@ const SellerProductPage = () => {
 
                 {activeTab === 'media' && (
                   <div className="space-y-5">
-                    <label className={`${labelClass} ${validationErrors.images ? 'text-red-600' : ''}`}>
-                      Product Media <span className="text-red-500">*</span> (At least one image required)
+                    <label className={`${labelClass} ${validationErrors.images ? 'text-sale' : ''}`}>
+                      Product Media <span className="text-sale">*</span> (At least one image required)
                     </label>
                     {validationErrors.images && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                        <p className="text-red-600 text-sm flex items-center gap-2">
+                      <div className="bg-sale-soft border border-red-200 rounded-lg p-3 mb-4">
+                        <p className="text-sale text-sm flex items-center gap-2">
                           <AlertCircle size={16} />
                           {validationErrors.images}
                         </p>
@@ -1262,43 +1262,43 @@ const SellerProductPage = () => {
                       {[0, 1, 2, 3].map((index) => (
                         <div key={index} className="relative group">
                           {mediaPreviews[index] || (formData.mediaFiles[index].type === 'image' && formData.existingImages[index]) || (formData.mediaFiles[index].type === 'video' && formData.existingVideos[index - formData.existingImages.length]) ? (
-                            <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-200">
+                            <div className="relative w-full h-48 rounded-lg overflow-hidden border border-line">
                               {formData.mediaFiles[index].type === 'image' ? (
                                 <img src={mediaPreviews[index] || formData.existingImages[index]} alt={`Preview ${index + 1}`} className="h-full w-full object-cover" />
                               ) : (
-                                <div className="h-full w-full flex flex-col items-center justify-center bg-gray-100">
-                                  <Film size={32} className="text-gray-400" />
-                                  <span className="text-xs text-gray-500 mt-2">Video File</span>
+                                <div className="h-full w-full flex flex-col items-center justify-center bg-canvas">
+                                  <Film size={32} className="text-muted" />
+                                  <span className="text-xs text-muted mt-2">Video File</span>
                                 </div>
                               )}
                               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button type="button" onClick={() => toggleMediaType(index)} className="bg-white rounded-full p-1.5 shadow-sm hover:bg-gray-100">
+                                <button type="button" onClick={() => toggleMediaType(index)} className="bg-white rounded-full p-1.5  hover:bg-canvas">
                                   {formData.mediaFiles[index].type === 'image' ? <Film size={14} /> : <Image size={14} />}
                                 </button>
-                                <button type="button" onClick={() => removeMedia(index)} className="bg-white rounded-full p-1.5 shadow-sm hover:bg-red-50 hover:text-red-600">
+                                <button type="button" onClick={() => removeMedia(index)} className="bg-white rounded-full p-1.5  hover:bg-sale-soft hover:text-sale">
                                   <X size={14} />
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${validationErrors.images ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-blue-300'}`}>
-                              <Upload className={`mx-auto h-8 w-8 ${validationErrors.images ? 'text-red-400' : 'text-gray-400'}`} />
+                            <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${validationErrors.images ? 'border-red-400 bg-sale-soft' : 'border-line hover:border-line'}`}>
+                              <Upload className={`mx-auto h-8 w-8 ${validationErrors.images ? 'text-red-400' : 'text-muted'}`} />
                               <div className="mt-2">
-                                <label className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-500">
+                                <label className="cursor-pointer text-sm font-medium text-ink hover:text-ink">
                                   <span>Upload {formData.mediaFiles[index].type === 'image' ? 'Image' : 'Video'} {index + 1}</span>
                                   <input type="file" className="sr-only" accept={formData.mediaFiles[index].type === 'image' ? 'image/*' : 'video/*'} onChange={(e) => handleMediaChange(e, index, formData.mediaFiles[index].type)} />
                                 </label>
                               </div>
-                              <button type="button" onClick={() => toggleMediaType(index)} className="mt-2 text-xs text-blue-600 hover:text-blue-500">
+                              <button type="button" onClick={() => toggleMediaType(index)} className="mt-2 text-xs text-ink hover:text-ink">
                                 Switch to {formData.mediaFiles[index].type === 'image' ? 'Video' : 'Image'}
                               </button>
-                              <p className="text-xs text-gray-400 mt-1">{formData.mediaFiles[index].type === 'image' ? 'PNG, JPG up to 10MB' : 'MP4, MOV up to 20MB'}</p>
+                              <p className="text-xs text-muted mt-1">{formData.mediaFiles[index].type === 'image' ? 'PNG, JPG up to 10MB' : 'MP4, MOV up to 20MB'}</p>
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
-                    <p className="text-sm text-gray-500 text-center mt-2">
+                    <p className="text-sm text-muted text-center mt-2">
                       {validationErrors.images ? '⚠️ ' : '💡 '}
                       At least one image is required. You can upload up to 4 images.
                     </p>
@@ -1342,7 +1342,7 @@ const SellerProductPage = () => {
 
                     {fieldConfig.showSEO && (
                       <div className="space-y-4">
-                        <h4 className="font-medium text-gray-800">SEO Information</h4>
+                        <h4 className="font-medium text-ink">SEO Information</h4>
                         <div>
                           <label className={labelClass}>Meta Title</label>
                           <input type="text" value={formData.metaTitle} onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })} className={inputClass} />
@@ -1360,12 +1360,12 @@ const SellerProductPage = () => {
                   </div>
                 )}
 
-                <div className="sticky bottom-0 bg-white pt-5 pb-2 border-t border-gray-100 mt-6">
+                <div className="sticky bottom-0 bg-white pt-5 pb-2 border-t border-line mt-6">
                   <div className="flex justify-between items-center">
                     <button
                       type="button"
                       onClick={() => { const prev = getPrevTab(activeTab); if (prev) setActiveTab(prev); else handleCloseModal(); }}
-                      className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+                      className="px-4 py-2 text-ink-soft hover:text-ink font-medium"
                     >
                       {getPrevTab(activeTab) ? 'Back' : 'Cancel'}
                     </button>
@@ -1374,7 +1374,7 @@ const SellerProductPage = () => {
                         <button
                           type="button"
                           onClick={handleNextTab}
-                          className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                          className="px-5 py-2 bg-ink text-white rounded-lg hover:bg-black transition-colors font-medium"
                         >
                           Next
                         </button>

@@ -1,377 +1,164 @@
-import { MapPin, Phone, Clock, MessageSquare, Send, Sparkles } from "lucide-react"
-import Footer from "../Layouts/Footer"
-import NavBar from "../Layouts/Navbar"
-import { motion } from "framer-motion"
-import { useState } from "react"
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Clock, Mail, MapPin, MessageCircle, Package, Phone, RotateCcw, Store } from "lucide-react";
+import { toast } from "react-hot-toast";
+import NavBar from "./Navbar";
+import Footer from "./Footer";
+import { Breadcrumbs, Container, btn } from "../Store/Sections";
+
+const CONTACT = {
+  phone: "+91 98330 23277",
+  whatsapp: "919833023277",
+  email: "flybuybrand26@gmail.com",
+  hours: "Mon–Sat, 9:00 AM – 8:00 PM",
+  address: "Bilathikulam Road, Nadakavu, Kozhikode 673011, Kerala",
+};
+
+const TOPICS = ["Order & delivery", "Returns & refunds", "Payments", "Selling on FBB", "Something else"];
+
+const QUICK = [
+  { icon: Package, title: "Track an order", text: "See status and delivery updates", to: "/orders" },
+  { icon: RotateCcw, title: "Start a return", text: "Open the order and choose return", to: "/orders" },
+  { icon: Store, title: "Become a seller", text: "Apply to sell on FBB Store", to: "/seller/register" },
+];
 
 const ContactPage = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    subject: "",
-    message: ""
-  })
+  const [form, setForm] = useState({ name: "", phone: "", topic: TOPICS[0], orderId: "", message: "" });
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
+  useEffect(() => {
+    document.title = "Contact us · FBB Store";
+  }, []);
 
-  const contactInfo = {
-    address: "Bilathikulam Road, Nadakavu, Kozhikode - 673011, Kerala",
-    phone: "+91 98330 23277",
-    email: "flybuybrand26@gmail.com",
-    hours: "Mon-Sat: 9:00 AM - 8:00 PM",
-    whatsapp: "+91 98330 23277"
-  }
+  const body = () =>
+    [
+      `Hi FBB Store,`,
+      ``,
+      `Topic: ${form.topic}`,
+      form.orderId && `Order ID: ${form.orderId}`,
+      ``,
+      form.message.trim(),
+      ``,
+      `— ${form.name.trim()}${form.phone ? ` (${form.phone})` : ""}`,
+    ]
+      .filter((l): l is string => typeof l === "string")
+      .join("\n");
 
-  const departments = [
-    {
-      name: "Customer Support",
-      description: "For order inquiries, returns, and general assistance",
-      email: "flybuybrand26@gmail.com",
-      response: "Within 24 hours"
-    },
-    {
-      name: "Sales & Wholesale",
-      description: "For bulk orders and partnership inquiries",
-      email: "flybuybrand26@gmail.com",
-      response: "Within 48 hours"
-    },
-    {
-      name: "Careers",
-      description: "Join our team and grow with us",
-      email: "flybuybrand26@gmail.com",
-      response: "Within 72 hours"
+  const valid = () => {
+    if (!form.name.trim() || form.message.trim().length < 10) {
+      toast.error("Please add your name and a short message");
+      return false;
     }
-  ]
+    return true;
+  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
+  const sendWhatsApp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!valid()) return;
+    window.open(`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(body())}`, "_blank", "noopener");
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      setSubmitStatus("success")
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        subject: "",
-        message: ""
-      })
-    } catch (error) {
-      setSubmitStatus("error")
-    } finally {
-      setIsSubmitting(false)
-      setTimeout(() => setSubmitStatus("idle"), 5000)
-    }
-  }
-
-  const handleWhatsApp = () => {
-    const message = encodeURIComponent(`Hello FBB Store, I'd like to get in touch regarding: `)
-    window.open(`https://wa.me/${contactInfo.whatsapp.replace(/\D/g, '')}?text=${message}`, "_blank")
-  }
+  const sendEmail = () => {
+    if (!valid()) return;
+    window.location.href = `mailto:${CONTACT.email}?subject=${encodeURIComponent(`[FBB] ${form.topic}${form.orderId ? ` – ${form.orderId}` : ""}`)}&body=${encodeURIComponent(body())}`;
+  };
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col bg-white">
       <NavBar />
-      <div className="min-h-screen bg-white mt-16">
-        {/* Hero Section */}
-        <div className="relative h-[300px] md:h-[400px] overflow-hidden bg-black">
-          <motion.div
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 1.5 }}
-            className="absolute inset-0"
-          >
-            <img
-              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=1200&h=400&fit=crop&auto=format&q=80"
-              alt="Contact Us"
-              className="w-full h-full object-cover opacity-60"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
-          </motion.div>
+      <main className="flex-1">
+        <section className="border-b border-line bg-canvas">
+          <Container className="py-10 sm:py-14">
+            <Breadcrumbs items={[{ label: "Home", to: "/" }, { label: "Contact us" }]} />
+            <h1 className="mt-3 font-display text-4xl font-semibold uppercase sm:text-5xl">How can we help?</h1>
+            <p className="mt-2 max-w-xl text-[15px] text-ink-soft">Our team replies within one business day. For the fastest answer, message us on WhatsApp.</p>
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              {QUICK.map(({ icon: Icon, title, text, to }) => (
+                <Link key={title} to={to} className="flex items-center gap-4 rounded-md bg-white p-5 transition hover:shadow-md">
+                  <Icon className="h-6 w-6 shrink-0" strokeWidth={1.5} />
+                  <span>
+                    <span className="block font-semibold">{title}</span>
+                    <span className="block text-sm text-muted">{text}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </Container>
+        </section>
 
-          <div className="relative h-full flex items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-center w-full"
-            >
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: "80px" }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="h-0.5 bg-gold-400 mb-6 mx-auto"
-              />
-              
-              <h1 className="text-white text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-                GET IN <span className="text-gold-400">TOUCH</span>
-              </h1>
+        <Container className="grid gap-12 py-12 sm:py-16 lg:grid-cols-12">
+          <form onSubmit={sendWhatsApp} className="lg:col-span-7" noValidate>
+            <h2 className="font-display text-2xl font-semibold uppercase">Send us a message</h2>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Your name *</span>
+                <input value={form.name} onChange={set("name")} autoComplete="name" className="field" required />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Phone</span>
+                <input value={form.phone} onChange={set("phone")} type="tel" autoComplete="tel" className="field" />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Topic</span>
+                <select value={form.topic} onChange={set("topic")} className="field">
+                  {TOPICS.map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Order ID (if any)</span>
+                <input value={form.orderId} onChange={set("orderId")} placeholder="e.g. ORD-12345" className="field" />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="mb-1.5 block text-sm font-medium">Message *</span>
+                <textarea value={form.message} onChange={set("message")} rows={6} className="field resize-y" required />
+              </label>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button type="submit" className={btn.primary}>
+                <MessageCircle className="h-4 w-4" /> Send on WhatsApp
+              </button>
+              <button type="button" onClick={sendEmail} className={btn.secondary}>
+                <Mail className="h-4 w-4" /> Send by email
+              </button>
+            </div>
+            <p className="mt-3 text-xs text-muted">Your message opens in WhatsApp or your email app, ready to send.</p>
+          </form>
 
-              <p className="text-gray-200 text-base md:text-lg max-w-2xl mx-auto">
-                We're here to help. Reach out to us for any inquiries, support, or feedback.
-              </p>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Contact Information */}
-        <div className="py-12 md:py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-3 gap-8 mb-16">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className="bg-gray-50 p-6 rounded-xl hover:shadow-lg transition-shadow"
-              >
-                <div className="w-12 h-12 rounded-full bg-gold-400/10 flex items-center justify-center text-gold-400 mb-4">
-                  <MapPin className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Visit Us</h3>
-                <p className="text-gray-600">{contactInfo.address}</p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="bg-gray-50 p-6 rounded-xl hover:shadow-lg transition-shadow"
-              >
-                <div className="w-12 h-12 rounded-full bg-gold-400/10 flex items-center justify-center text-gold-400 mb-4">
-                  <Phone className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Call Us</h3>
-                <a href={`tel:${contactInfo.phone.replace(/\s/g, '')}`} className="text-gray-600 hover:text-gold-400 transition-colors block">
-                  {contactInfo.phone}
+          <aside className="space-y-4 lg:col-span-5">
+            {[
+              { icon: Phone, title: "Call us", value: CONTACT.phone, href: `tel:${CONTACT.phone.replace(/\s/g, "")}` },
+              { icon: Mail, title: "Email", value: CONTACT.email, href: `mailto:${CONTACT.email}` },
+              { icon: Clock, title: "Opening hours", value: CONTACT.hours },
+              { icon: MapPin, title: "Address", value: CONTACT.address },
+            ].map(({ icon: Icon, title, value, href }) => {
+              const inner = (
+                <>
+                  <Icon className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.5} />
+                  <span>
+                    <span className="block text-sm font-semibold">{title}</span>
+                    <span className="block text-sm text-muted">{value}</span>
+                  </span>
+                </>
+              );
+              return href ? (
+                <a key={title} href={href} className="flex items-start gap-4 rounded-md border border-line p-5 hover:border-ink">
+                  {inner}
                 </a>
-                <button
-                  onClick={handleWhatsApp}
-                  className="mt-3 inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Chat on WhatsApp
-                </button>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="bg-gray-50 p-6 rounded-xl hover:shadow-lg transition-shadow"
-              >
-                <div className="w-12 h-12 rounded-full bg-gold-400/10 flex items-center justify-center text-gold-400 mb-4">
-                  <Clock className="w-6 h-6" />
+              ) : (
+                <div key={title} className="flex items-start gap-4 rounded-md border border-line p-5">
+                  {inner}
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Business Hours</h3>
-                <p className="text-gray-600">{contactInfo.hours}</p>
-                <p className="text-gray-500 text-sm mt-2">Sunday: Closed</p>
-              </motion.div>
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-12">
-              {/* Contact Form */}
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-                className="lg:col-span-2"
-              >
-                <div className="bg-white p-8 rounded-xl shadow-lg">
-                  <div className="flex items-center gap-3 mb-6">
-                    <Send className="w-8 h-8 text-gold-400" />
-                    <h2 className="text-2xl font-bold text-gray-900">Send Us a Message</h2>
-                  </div>
-
-                  {submitStatus === "success" && (
-                    <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg">
-                      Thank you for your message! We'll get back to you soon.
-                    </div>
-                  )}
-
-                  {submitStatus === "error" && (
-                    <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg">
-                      Something went wrong. Please try again.
-                    </div>
-                  )}
-
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Your Name *
-                        </label>
-                        <input
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-400 focus:border-transparent"
-                          placeholder="John Doe"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Email Address *
-                        </label>
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-400 focus:border-transparent"
-                          placeholder="john@example.com"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Phone Number
-                        </label>
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-400 focus:border-transparent"
-                          placeholder="+91 98330 23277"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Subject *
-                        </label>
-                        <select
-                          name="subject"
-                          value={formData.subject}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-400 focus:border-transparent"
-                        >
-                          <option value="">Select a subject</option>
-                          <option value="General Inquiry">General Inquiry</option>
-                          <option value="Order Support">Order Support</option>
-                          <option value="Product Information">Product Information</option>
-                          <option value="Partnership">Partnership</option>
-                          <option value="Other">Other</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Your Message *
-                      </label>
-                      <textarea
-                        name="message"
-                        value={formData.message}
-                        onChange={handleChange}
-                        required
-                        rows={5}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-400 focus:border-transparent"
-                        placeholder="How can we help you?"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full bg-gold-400 text-white font-semibold py-3 rounded-lg hover:bg-gold-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? "Sending..." : "Send Message"}
-                    </button>
-                  </form>
-                </div>
-              </motion.div>
-
-              {/* Departments & Quick Links */}
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="space-y-8"
-              >
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-6">Contact Departments</h3>
-                  <div className="space-y-4">
-                    {departments.map((dept, index) => (
-                      <div key={index} className="p-4 border border-gray-200 rounded-lg hover:border-gold-400 transition-colors">
-                        <h4 className="font-semibold text-gray-900 mb-1">{dept.name}</h4>
-                        <p className="text-sm text-gray-600 mb-2">{dept.description}</p>
-                        <div className="flex items-center justify-between text-sm">
-                          <a href={`mailto:${dept.email}`} className="text-gold-400 hover:text-gold-500">
-                            {dept.email}
-                          </a>
-                          <span className="text-gray-500">{dept.response}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-gray-900 text-white p-6 rounded-xl">
-                  <Sparkles className="w-8 h-8 text-gold-400 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Need Immediate Help?</h3>
-                  <p className="text-gray-300 mb-4">
-                    For urgent inquiries, reach out to us directly via WhatsApp for the fastest response.
-                  </p>
-                  <button
-                    onClick={handleWhatsApp}
-                    className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <MessageSquare className="w-5 h-5" />
-                    Chat on WhatsApp
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-
-        {/* Map Section */}
-        <div className="py-12 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Our Store</h2>
-              <p className="text-gray-600">Visit us at our physical location</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-lg">
-              <div className="aspect-video rounded-lg overflow-hidden">
-                <iframe
-                  src={`https://www.google.com/maps?q=${encodeURIComponent(contactInfo.address)}&output=embed`}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  title="FBB Store Location"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+              );
+            })}
+          </aside>
+        </Container>
+      </main>
       <Footer />
-    </>
-  )
-}
+    </div>
+  );
+};
 
-export default ContactPage
+export default ContactPage;

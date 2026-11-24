@@ -8,9 +8,6 @@ import RequireUser from "../Components/Layouts/RequireUser";
 const Shop = lazy(() => import("../Components/User/Shop"));
 const ProductPage = lazy(() => import("../Components/User/ProductDetail"));
 const CategoryPages = lazy(() => import("../Components/User/Category"));
-const FilterProduct = lazy(() => import("../Components/User/FilterProduct"));
-const Subcategory = lazy(() => import("../Components/User/SubCategory"));
-const Types = lazy(() => import("../Components/User/Types"));
 const AboutPage = lazy(() => import("../Components/Layouts/About"));
 const SellerPages = lazy(() => import("../Components/User/Sellers"));
 const ContactPage = lazy(() => import("../Components/Layouts/Contact"));
@@ -22,9 +19,23 @@ const OrdersPage = lazy(() => import("../Components/User/OrdersPage"));
 const OrderDetails = lazy(() => import("../Components/User/OrderDetails"));
 const NotFound = lazy(() => import("../Components/Layouts/NotFound"));
 
+// Legacy URLs from the previous site map onto the unified shop page.
 const CategoryRedirect: React.FC = () => {
   const { id } = useParams();
   return <Navigate to={`/shop/category/${id}`} replace />;
+};
+const SellerRedirect: React.FC = () => {
+  const { id } = useParams();
+  return <Navigate to={`/shop/seller/${id}`} replace />;
+};
+const SellerCategoryRedirect: React.FC = () => {
+  const { seller, category } = useParams();
+  return <Navigate to={`/shop/category/${category}?seller=${seller}`} replace />;
+};
+const SubcategoryRedirect: React.FC = () => {
+  const { seller, id, category } = useParams();
+  const target = id || category;
+  return <Navigate to={target ? `/shop/subcategory/${target}${seller ? `?seller=${seller}` : ""}` : "/shop"} replace />;
 };
 
 const User: React.FC = () => (
@@ -40,10 +51,10 @@ const User: React.FC = () => (
       <Route path="/category" element={<CategoryPages />} />
       <Route path="/category/:id" element={<CategoryRedirect />} />
       <Route path="/seller-list" element={<SellerPages />} />
-      <Route path="/seller-list/:id" element={<CategoryPages />} />
-      <Route path="/seller-list/:seller/category/:category" element={<Subcategory />} />
-      <Route path="/product-type/:category" element={<Types />} />
-      <Route path="/products/:seller/:category/:id" element={<FilterProduct />} />
+      <Route path="/seller-list/:id" element={<SellerRedirect />} />
+      <Route path="/seller-list/:seller/category/:category" element={<SellerCategoryRedirect />} />
+      <Route path="/product-type/:category" element={<SubcategoryRedirect />} />
+      <Route path="/products/:seller/:category/:id" element={<SubcategoryRedirect />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/cart" element={<CartPage />} />

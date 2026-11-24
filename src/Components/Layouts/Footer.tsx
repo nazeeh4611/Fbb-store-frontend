@@ -1,285 +1,126 @@
-import { Link } from "react-router-dom"
-import {
-  Instagram,
-  Mail,
-  Phone,
-  MapPin,
-  Truck,
-  Headphones,
-  Shield,
-  CreditCard,
-  Gift,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react"
-import { useState } from "react"
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { ChevronDown, CreditCard, Instagram, Mail, Phone, RotateCcw, ShieldCheck, Truck } from "lucide-react";
+import fbb from "./Img/fbb.png";
+import { sortForMenu, useCategoryTree } from "../../lib/shop";
+import { cn } from "../../lib/util";
 
-export default function Footer() {
-  const currentYear = new Date().getFullYear();
-  const [openSection, setOpenSection] = useState<string | null>(null);
+const PERKS = [
+  { icon: Truck, title: "Fast delivery", text: "Free shipping on selected styles" },
+  { icon: RotateCcw, title: "Easy returns", text: "Request a return from your orders" },
+  { icon: ShieldCheck, title: "Secure checkout", text: "Payments protected by Razorpay" },
+  { icon: CreditCard, title: "Cash on delivery", text: "Pay when your order arrives" },
+];
 
-  const toggle = (section: string) => {
-    setOpenSection(openSection === section ? null : section);
-  };
-
-  const shopCategories = [
-    { name: "Men's Fashion", href: "/shop" },
-    { name: "Women's Fashion", href: "/shop" },
-    { name: "Accessories", href: "/shop" },
-    { name: "Footwear", href: "/shop" },
-    { name: "Watches", href: "/shop" },
-    { name: "Sunglasses", href: "/shop" },
-    { name: "Bags & Luggage", href: "/shop" },
-    { name: "Jewelry", href: "/shop" }
-  ];
-
-  const companyLinks = [
-    { name: "About Us", href: "/about" },
-    { name: "Our Story", href: "/about" },
-  ];
-
-  const customerService = [
-    { name: "Contact Us", href: "/contact" },
-  ];
-
-  const features = [
-    { icon: <Truck className="w-5 h-5" />, title: "Fast Delivery", description: "Across India" },
-    { icon: <Shield className="w-5 h-5" />, title: "Authentic", description: "100% genuine" },
-    { icon: <CreditCard className="w-5 h-5" />, title: "Secure Pay", description: "SSL encrypted" },
-    { icon: <Headphones className="w-5 h-5" />, title: "Support", description: "Call or WhatsApp" },
-    { icon: <Gift className="w-5 h-5" />, title: "Easy Returns", description: "30-day policy" }
-  ];
-
-  const AccordionSection = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
-    <div className="border-b border-gray-800">
+const Column: React.FC<{ title: string; links: { label: string; to: string }[] }> = ({ title, links }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-white/10 md:border-0">
       <button
-        className="w-full flex items-center justify-between py-3.5 text-left"
-        onClick={() => toggle(id)}
+        className="flex w-full items-center justify-between py-4 text-left md:pointer-events-none md:py-0"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
       >
-        <span className="text-sm font-bold tracking-wider text-white">{title}</span>
-        {openSection === id
-          ? <ChevronUp className="w-4 h-4 text-gold-400 flex-shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />}
+        <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-white">{title}</h3>
+        <ChevronDown className={cn("h-4 w-4 text-white/60 transition md:hidden", open && "rotate-180")} />
       </button>
-      {openSection === id && (
-        <div className="pb-3 space-y-2.5">
-          {children}
-        </div>
-      )}
+      <ul className={cn("space-y-3 pb-5 md:mt-5 md:block md:pb-0", open ? "block" : "hidden")}>
+        {links.map((l) => (
+          <li key={l.label}>
+            <Link to={l.to} className="text-sm text-white/65 transition hover:text-white">
+              {l.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
+};
+
+const Footer: React.FC = () => {
+  const { categories } = useCategoryTree();
+  const shopLinks = [
+    { label: "New in", to: "/shop?sort=new" },
+    ...sortForMenu(categories)
+      .slice(0, 5)
+      .map((c) => ({ label: c.name, to: `/shop/category/${c._id}` })),
+    { label: "Sale", to: "/shop?sale=1" },
+  ];
 
   return (
-    <footer className="bg-black text-white">
-      {/* Features - horizontal scroll on mobile, grid on desktop */}
-      <div className="border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-8">
-          <div className="flex md:grid md:grid-cols-5 gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 md:mx-0 px-4 md:px-0">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="flex-shrink-0 w-32 md:w-auto snap-start flex flex-col items-center text-center p-3 md:p-0 bg-gray-900 md:bg-transparent rounded-xl md:rounded-none"
+    <footer className="mt-auto">
+      <div className="border-t border-line bg-canvas">
+        <div className="mx-auto grid max-w-[1440px] grid-cols-2 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-4 lg:px-10">
+          {PERKS.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="flex items-start gap-3">
+              <Icon className="mt-0.5 h-6 w-6 shrink-0" strokeWidth={1.5} />
+              <div>
+                <p className="text-sm font-semibold">{title}</p>
+                <p className="text-xs text-muted sm:text-sm">{text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-ink text-white">
+        <div className="mx-auto max-w-[1440px] px-4 pt-12 sm:px-6 lg:px-10">
+          <div className="grid gap-8 md:grid-cols-12 md:gap-10">
+            <div className="md:col-span-4">
+              <img src={fbb} alt="FBB Fly Buy Brand" className="h-12 w-auto" loading="lazy" />
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/65">
+                Fashion, accessories and lifestyle from verified sellers, delivered across India with secure checkout.
+              </p>
+              <div className="mt-6 space-y-2.5 text-sm">
+                <a href="mailto:flybuybrand26@gmail.com" className="flex items-center gap-3 text-white/80 hover:text-white">
+                  <Mail className="h-4 w-4" /> flybuybrand26@gmail.com
+                </a>
+                <a href="tel:+919833023277" className="flex items-center gap-3 text-white/80 hover:text-white">
+                  <Phone className="h-4 w-4" /> +91 98330 23277
+                </a>
+              </div>
+              <a
+                href="https://www.instagram.com/fbb_store_"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="FBB Store on Instagram"
+                className="mt-6 inline-grid h-10 w-10 place-items-center rounded-full border border-white/20 hover:bg-white hover:text-ink"
               >
-                <div className="text-gold-400 mb-2">{feature.icon}</div>
-                <h3 className="font-semibold text-xs md:text-sm mb-0.5">{feature.title}</h3>
-                <p className="text-gray-400 text-xs">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Footer */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
-
-        {/* Desktop Grid */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-          <div className="space-y-5">
-            <div className="text-2xl font-bold tracking-wider">FBB LUXURY</div>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Redefining luxury fashion since 2020. We curate the finest collections from world-renowned designers.
-            </p>
-            <div className="space-y-2.5">
-              <div className="flex items-start space-x-3">
-                <MapPin className="w-4 h-4 text-gold-400 mt-0.5 flex-shrink-0" />
-                <span className="text-sm text-gray-300">Bilathikulam Road, Nadakavu, Kozhikode - 673011, Kerala</span>
-              </div>
-              <a href="mailto:flybuybrand26@gmail.com" className="flex items-center space-x-3 group">
-                <Mail className="w-4 h-4 text-gold-400 flex-shrink-0" />
-                <span className="text-sm text-gray-300 group-hover:text-gold-400 transition-colors">flybuybrand26@gmail.com</span>
-              </a>
-              <a href="tel:+919833023277" className="flex items-center space-x-3 group">
-                <Phone className="w-4 h-4 text-gold-400 flex-shrink-0" />
-                <span className="text-sm text-gray-300 group-hover:text-gold-400 transition-colors">+91 98330 23277</span>
+                <Instagram className="h-[18px] w-[18px]" />
               </a>
             </div>
-            <div className="flex space-x-4">
-              <a href="https://www.instagram.com/fbb_store_" target="_blank" rel="noopener noreferrer" aria-label="FBB Store on Instagram" className="text-gray-400 hover:text-gold-400 transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
 
-          <div>
-            <h3 className="text-sm font-bold mb-5 pb-2.5 border-b border-gray-800 tracking-wider">SHOP</h3>
-            <ul className="space-y-2.5">
-              {shopCategories.map((c) => (
-                <li key={c.name}>
-                  <Link to={c.href} className="text-gray-400 hover:text-gold-400 transition-colors text-sm flex items-center group">
-                    <span className="w-1 h-1 bg-gold-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {c.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-bold mb-5 pb-2.5 border-b border-gray-800 tracking-wider">COMPANY</h3>
-            <ul className="space-y-2.5">
-              {companyLinks.map((l) => (
-                <li key={l.name}>
-                  <Link to={l.href} className="text-gray-400 hover:text-gold-400 transition-colors text-sm flex items-center group">
-                    <span className="w-1 h-1 bg-gold-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {l.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <h3 className="text-sm font-bold mt-6 mb-4 pb-2.5 border-b border-gray-800 tracking-wider">SUPPORT</h3>
-            <ul className="space-y-2.5">
-              {customerService.map((s) => (
-                <li key={s.name}>
-                  <Link to={s.href} className="text-gray-400 hover:text-gold-400 transition-colors text-sm flex items-center group">
-                    <span className="w-1 h-1 bg-gold-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {s.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-bold mb-5 pb-2.5 border-b border-gray-800 tracking-wider">NEWSLETTER</h3>
-            <p className="text-gray-400 text-sm mb-4">Be first to discover new collections and exclusive offers.</p>
-            <div className="flex flex-col gap-2">
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="px-3 py-2.5 bg-gray-900 border border-gray-800 rounded text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+            <div className="grid md:col-span-8 md:grid-cols-3 md:gap-8">
+              <Column title="Shop" links={shopLinks} />
+              <Column
+                title="Customer care"
+                links={[
+                  { label: "My account", to: "/profile" },
+                  { label: "Track my order", to: "/orders" },
+                  { label: "Contact us", to: "/contact" },
+                  { label: "Bag", to: "/cart" },
+                ]}
               />
-              <button className="px-4 py-2.5 bg-gold-400 text-black font-semibold rounded text-sm hover:bg-gold-500 transition-colors">
-                SUBSCRIBE
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Layout */}
-        <div className="md:hidden">
-          {/* Brand compact */}
-          <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-800">
-            <div>
-              <div className="text-xl font-bold tracking-wider mb-1">FBB LUXURY</div>
-              <a href="mailto:flybuybrand26@gmail.com" className="flex items-center gap-2 text-xs text-gray-400 hover:text-gold-400 transition-colors">
-                <Mail className="w-3 h-3 text-gold-400" />
-                <span>flybuybrand26@gmail.com</span>
-              </a>
-              <a href="tel:+919833023277" className="flex items-center gap-2 text-xs text-gray-400 hover:text-gold-400 transition-colors mt-1">
-                <Phone className="w-3 h-3 text-gold-400" />
-                <span>+91 98330 23277</span>
-              </a>
-            </div>
-            <div className="flex flex-col gap-2">
-              <a href="https://www.instagram.com/fbb_store_" target="_blank" rel="noopener noreferrer" aria-label="FBB Store on Instagram" className="text-gray-400 hover:text-gold-400 transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
-
-          {/* Accordion sections */}
-          <AccordionSection id="shop" title="SHOP">
-            {shopCategories.map((c) => (
-              <Link key={c.name} to={c.href} className="block text-gray-400 text-sm py-0.5 hover:text-gold-400 transition-colors">
-                {c.name}
-              </Link>
-            ))}
-          </AccordionSection>
-
-          <AccordionSection id="company" title="COMPANY">
-            {companyLinks.map((l) => (
-              <Link key={l.name} to={l.href} className="block text-gray-400 text-sm py-0.5 hover:text-gold-400 transition-colors">
-                {l.name}
-              </Link>
-            ))}
-          </AccordionSection>
-
-          <AccordionSection id="support" title="SUPPORT">
-            {customerService.map((s) => (
-              <Link key={s.name} to={s.href} className="block text-gray-400 text-sm py-0.5 hover:text-gold-400 transition-colors">
-                {s.name}
-              </Link>
-            ))}
-          </AccordionSection>
-
-          {/* Newsletter compact */}
-          <div className="mt-5 pt-5 border-t border-gray-800">
-            <p className="text-sm font-bold tracking-wider mb-3">JOIN OUR COMMUNITY</p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Your email"
-                className="flex-grow px-3 py-2.5 bg-gray-900 border border-gray-800 rounded text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gold-400 transition-colors"
+              <Column
+                title="FBB Store"
+                links={[
+                  { label: "About us", to: "/about" },
+                  { label: "Brands & sellers", to: "/seller-list" },
+                  { label: "Sell on FBB", to: "/seller/register" },
+                  { label: "Seller login", to: "/seller/login" },
+                ]}
               />
-              <button className="px-4 py-2.5 bg-gold-400 text-black font-bold rounded text-xs hover:bg-gold-500 transition-colors whitespace-nowrap">
-                JOIN
-              </button>
             </div>
           </div>
 
-          {/* Address mobile */}
-          <div className="mt-4 pt-4 border-t border-gray-800 flex items-start gap-2 text-xs text-gray-400">
-            <MapPin className="w-3.5 h-3.5 text-gold-400 mt-0.5 flex-shrink-0" />
-            <span>Bilathikulam Road, Nadakavu, Kozhikode - 673011, Kerala</span>
+          <div className="mt-12 flex flex-col gap-3 border-t border-white/10 py-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
+            <p>© {new Date().getFullYear()} FBB Store · Fly Buy Brand. All rights reserved.</p>
+            <p>Nooras Tower, Chettipadi, Malappuram, Kerala 676319</p>
           </div>
         </div>
       </div>
-
-      {/* Bottom Bar */}
-      <div className="border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-5">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-            <p className="text-gray-500 text-xs text-center sm:text-left">
-              © {currentYear} FBB Store. All rights reserved.
-            </p>
-            <div className="flex items-center gap-4 text-xs text-gray-500">
-              <div className="flex items-center gap-1.5">
-                <span>Country:</span>
-                <select className="bg-transparent border-none focus:outline-none text-white text-xs">
-                  <option>United States</option>
-                  <option>United Kingdom</option>
-                  <option>United Arab Emirates</option>
-                  <option>India</option>
-                  <option>Singapore</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <p className="text-gray-600 text-xs text-center mt-3 hidden md:block">
-            FBB Store is a registered trademark. All products are authentic and sourced directly from authorized distributors.
-          </p>
-        </div>
-      </div>
-
-      <style>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </footer>
   );
-}
+};
+
+export default Footer;

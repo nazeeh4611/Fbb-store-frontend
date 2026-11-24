@@ -187,7 +187,7 @@ const OtpModal: React.FC<OtpModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" 
          style={{ background: 'rgba(20, 78, 140, 0.15)', backdropFilter: 'blur(8px)' }}>
       <div className="relative w-full max-w-md">
-        <div className="relative rounded-3xl overflow-hidden shadow-2xl" 
+        <div className="relative rounded-md overflow-hidden shadow-2xl" 
              style={{ background: 'black' }}>
           
           <button 
@@ -217,7 +217,7 @@ const OtpModal: React.FC<OtpModalProps> = ({
             ) : (
               <>
                 <div className="text-center mb-8">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center"
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-md flex items-center justify-center"
                        style={{ background: 'rgba(255, 255, 255, 0.15)' }}>
                     <CheckCircle className="w-8 h-8 text-white" />
                   </div>
@@ -229,7 +229,7 @@ const OtpModal: React.FC<OtpModalProps> = ({
                 </div>
 
                 {error && (
-                  <div className="mb-4 p-3 rounded-xl text-sm" 
+                  <div className="mb-4 p-3 rounded-md text-sm" 
                        style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 text-red-400" />
@@ -239,7 +239,7 @@ const OtpModal: React.FC<OtpModalProps> = ({
                 )}
 
                 {success && (
-                  <div className="mb-4 p-3 rounded-xl text-sm" 
+                  <div className="mb-4 p-3 rounded-md text-sm" 
                        style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
                     <p className="text-green-400">{success}</p>
                   </div>
@@ -259,7 +259,7 @@ const OtpModal: React.FC<OtpModalProps> = ({
                           onKeyDown={(e) => handleKeyDown(index, e)}
                           onPaste={index === 0 ? handlePaste : undefined}
                           maxLength={1}
-                          className="w-12 h-14 text-center text-xl font-bold rounded-xl border-0 focus:outline-none focus:ring-2 transition-all"
+                          className="w-12 h-14 text-center text-xl font-bold rounded-md border-0 focus:outline-none focus:ring-2 transition-all"
                           style={{ 
                             background: 'rgba(255, 255, 255, 0.15)',
                             color: '#fff',
@@ -286,7 +286,7 @@ const OtpModal: React.FC<OtpModalProps> = ({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-3 text-white rounded-xl font-bold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3 text-white rounded-md font-bold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ background: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(10px)' }}
                   >
                     {isSubmitting ? 'Verifying...' : 'Verify & Continue'}
